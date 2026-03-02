@@ -7,9 +7,9 @@ export const loginBody = t.Object({
 })
 
 export const signupBody = t.Object({
-  username: t.String({ minLength: 3, maxLength: 20, pattern: '^[a-z0-9-]+$' }),
+  username: t.String({ minLength: 3, maxLength: 20, pattern: '^\\w+$' }),
   nickname: t.String({ minLength: 1, maxLength: 20 }),
-  password: t.String({ minLength: 8 }),
+  password: t.String({ minLength: 8, maxLength: 20 }),
   avatar: t.Optional(t.String()),
 })
 

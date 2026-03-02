@@ -76,7 +76,7 @@ async function handleSubmit() {
 
       <Card>
         <form @submit.prevent="handleSubmit">
-          <CardContent class="space-y-2 pt-6">
+          <CardContent class="space-y-4 pt-6">
             <Alert v-if="serverError" variant="destructive">
               <AlertDescription>{{ serverError }}</AlertDescription>
             </Alert>
@@ -86,8 +86,7 @@ async function handleSubmit() {
               :id="key"
               :key="key"
               v-model="field.value.value"
-              :type="field.type"
-              :autocomplete="field.autocomplete"
+              v-bind="field"
               :label="t(`field.${key}.label`)"
               :placeholder="t(`field.${key}.placeholder`)"
               :error="field.error.value"

@@ -7,14 +7,14 @@ const { username, nickname, password } = signupBody.properties
 export function validateField({ t, te }: Composer, schema: TString, value: string, field?: string): string {
   const label = field ? t(`field.${field}.label`) : ''
   if (!value)
-    return t('validation.required')
+    return t('validation.required', { label })
   if (schema.minLength && value.length < schema.minLength)
     return t('validation.minLength', { label, min: schema.minLength })
   if (schema.maxLength && value.length > schema.maxLength)
     return t('validation.maxLength', { label, max: schema.maxLength })
   if (schema.pattern && !new RegExp(schema.pattern).test(value)) {
     const key = `field.${field}.pattern`
-    return field && te(key) ? t(key) : t('validation.pattern')
+    return field && te(key) ? t(key, { label }) : t('validation.pattern', { label })
   }
   return ''
 }

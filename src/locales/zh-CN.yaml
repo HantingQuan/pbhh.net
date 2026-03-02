@@ -31,10 +31,10 @@ profile:
   saved: 已保存
 
 validation:
-  required: 不能为空
+  required: '{label}不能为空'
   minLength: '{label}至少 {min} 个字符'
   maxLength: '{label}最多 {max} 个字符'
-  pattern: 格式不正确
+  pattern: '{label}格式不正确'
 
 field:
   username:
