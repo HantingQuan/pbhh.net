@@ -1,7 +1,7 @@
-import type { SignupBody, UpdateProfileBody } from './model'
+import type { Capability, SignupBody, UpdateProfileBody, UserProfile } from './model'
 import bcrypt from 'bcryptjs'
 import { eq } from 'drizzle-orm'
-import { db, users } from 'server/db'
+import { db, userCapabilities, users } from 'server/db'
 
 export async function verify(username: string, password: string) {
   const user = db.select().from(users).where(eq(users.username, username)).get()
@@ -23,12 +23,20 @@ export async function create({ username, nickname, password }: SignupBody) {
   return { username }
 }
 
-export function getByUsername(username: string) {
-  return db.select({
+export function getByUsername(username: string): UserProfile | null {
+  const user = db.select({
     username: users.username,
     nickname: users.nickname,
     avatar: users.avatar,
-  }).from(users).where(eq(users.username, username)).get() ?? null
+  }).from(users).where(eq(users.username, username)).get()
+  if (!user)
+    return null
+  const capabilities = db.select({ capability: userCapabilities.capability })
+    .from(userCapabilities)
+    .where(eq(userCapabilities.username, username))
+    .all()
+    .map(r => r.capability) as Capability[]
+  return { ...user, capabilities }
 }
 
 export async function update(username: string, data: UpdateProfileBody) {

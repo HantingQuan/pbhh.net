@@ -1,10 +1,10 @@
 import { jwt } from '@elysiajs/jwt'
-import { bus } from '@server/events/bus'
+import { bus } from '@server/event/bus'
 import { Elysia } from 'elysia'
 import { loginBody, signupBody, updateProfileBody } from './model'
 import * as AuthService from './service'
 
-export const auth = new Elysia()
+export default new Elysia()
   .use(jwt({
     name: 'jwt',
     secret: Bun.env.JWT_SECRET ?? 'dev-secret-please-change-in-production',

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { UserProfile } from '@server/auth/model'
 import { LogOut, User } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -8,7 +7,11 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import useAvatar from '@/composables/avatar'
 import { clearAuth } from '@/lib/api'
 
-const props = defineProps<UserProfile>()
+const props = defineProps<{
+  username: string
+  nickname: string
+  avatar: string
+}>()
 
 const { t } = useI18n()
 const router = useRouter()

@@ -17,4 +17,4 @@ export const db = drizzle(sqlite, { schema })
 
 migrate(db, { migrationsFolder: resolve(import.meta.dir, 'drizzle') })
 
-export { users } from './schema'
+export * from './schema'
