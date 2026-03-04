@@ -1,7 +1,7 @@
 import { jwt } from '@elysiajs/jwt'
 import { Elysia } from 'elysia'
-import './service'
 import * as NotificationService from './service'
+import './service'
 
 export default new Elysia()
   .use(jwt({

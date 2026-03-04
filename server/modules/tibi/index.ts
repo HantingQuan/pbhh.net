@@ -31,6 +31,7 @@ export default new Elysia()
     if (!payload || typeof payload.sub !== 'string')
       return status(401, { message: 'error.tokenExpired' })
     TibiService.create(payload.sub, body.content, body.title)
+    bus.publish('tibi.created', { username: payload.sub })
     return status(201, {})
   }, {
     body: createTibiBody,
@@ -78,7 +79,7 @@ export default new Elysia()
       return status(404, { message: 'error.tibiNotFound' })
     return tibi
   })
-  .get('/tibi/:id/replies', async ({ headers, jwt, params }) => {
+  .get('/tibi/:id/thread', async ({ headers, jwt, params }) => {
     const authorization = headers.authorization ?? ''
     let viewerUsername: string | undefined
     if (authorization.startsWith('Bearer ')) {
@@ -86,7 +87,7 @@ export default new Elysia()
       if (payload && typeof payload.sub === 'string')
         viewerUsername = payload.sub
     }
-    return TibiService.listReplies(Number(params.id), viewerUsername)
+    return TibiService.listThread(Number(params.id), viewerUsername)
   })
   .post('/tibi/:id/reply', async ({ headers, jwt, params, body, status }) => {
     const authorization = headers.authorization ?? ''

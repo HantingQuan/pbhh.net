@@ -10,7 +10,7 @@ if (!existsSync(dataPath)) {
   mkdirSync(dataPath)
 }
 
-const sqlite = new Database(resolve(dataPath, 'db.sqlite'))
+export const sqlite = new Database(resolve(dataPath, 'db.sqlite'))
 sqlite.run('PRAGMA journal_mode = WAL;')
 
 export const db = drizzle(sqlite, { schema })

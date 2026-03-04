@@ -7,7 +7,6 @@ import { useRoute, useRouter } from 'vue-router'
 import ReplyItem from '@/components/ReplyItem.vue'
 import TibiCard from '@/components/TibiCard.vue'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardFooter } from '@/components/ui/card'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { api, user } from '@/lib/api'
@@ -24,6 +23,22 @@ interface TibiItem {
   likeCount: number
   replyCount: number
   liked: boolean
+  rootId: number
+}
+
+interface ThreadItem {
+  id: number
+  parentId: number
+  content: string
+  username: string
+  nickname: string
+  avatar: string
+  createdAt: number
+  likeCount: number
+  liked: boolean
+  parentUsername?: string
+  parentNickname?: string
+  parentContent?: string
 }
 
 const props = defineProps<{ id: number }>()
@@ -33,35 +48,86 @@ const router = useRouter()
 const route = useRoute()
 
 const tibi = ref<TibiItem | null>(null)
-const replies = ref<TibiItem[]>([])
+const thread = ref<ThreadItem[]>([])
 const loading = ref(true)
 const notFound = ref(false)
 
+const replyingToId = ref<number | null>(null)
 const replyContent = ref('')
 const submitting = ref(false)
 const serverError = ref('')
 const maxLength = replyBody.properties.content.maxLength!
 
-const textareaRef = ref<{ $el: HTMLTextAreaElement } | null>(null)
+const composeRef = ref<HTMLElement | null>(null)
 
 async function load() {
   loading.value = true
-  const [{ data: tibiData }, { data: repliesData }] = await Promise.all([
-    api.tibi({ id: props.id }).get(),
-    api.tibi({ id: props.id }).replies.get(),
-  ])
+  const { data: tibiData } = await api.tibi({ id: props.id }).get()
   loading.value = false
+
   if (!tibiData) {
     notFound.value = true
     return
   }
-  tibi.value = tibiData as TibiItem
-  replies.value = (repliesData ?? []) as TibiItem[]
 
-  if (route.hash === '#reply' && user.value) {
-    await nextTick()
-    textareaRef.value?.$el?.focus()
+  const item = tibiData as TibiItem
+  if (item.rootId !== item.id) {
+    router.replace(`/tibi/${item.rootId}`)
+    return
   }
+
+  tibi.value = item
+  await loadThread()
+
+  if (route.hash === '#reply' && user.value)
+    startReply(props.id)
+}
+
+async function loadThread() {
+  const { data } = await api.tibi({ id: props.id }).thread.get()
+  if (data)
+    thread.value = data as ThreadItem[]
+}
+
+async function startReply(targetId: number) {
+  if (!user.value) {
+    router.push('/login')
+    return
+  }
+  replyingToId.value = targetId
+  await nextTick()
+  composeRef.value?.querySelector('textarea')?.focus()
+}
+
+function cancelReply() {
+  replyingToId.value = null
+  replyContent.value = ''
+  serverError.value = ''
+}
+
+async function submitReply() {
+  if (!replyContent.value.trim() || !replyingToId.value)
+    return
+  submitting.value = true
+  serverError.value = ''
+  const { error } = await api.tibi({ id: replyingToId.value }).reply.post({ content: replyContent.value.trim() })
+  submitting.value = false
+  if (error) {
+    serverError.value = t('tibi.errors.postFailed')
+    return
+  }
+  replyContent.value = ''
+  replyingToId.value = null
+  await loadThread()
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    submitReply()
+  }
+  if (e.key === 'Escape')
+    cancelReply()
 }
 
 function onLiked(_id: number, liked: boolean, likeCount: number) {
@@ -71,30 +137,6 @@ function onLiked(_id: number, liked: boolean, likeCount: number) {
 
 function onDeleted() {
   router.back()
-}
-
-async function submitReply() {
-  if (!replyContent.value.trim())
-    return
-  submitting.value = true
-  serverError.value = ''
-  const { error } = await api.tibi({ id: props.id }).reply.post({ content: replyContent.value.trim() })
-  submitting.value = false
-  if (error) {
-    serverError.value = t('tibi.errors.postFailed')
-    return
-  }
-  replyContent.value = ''
-  const { data } = await api.tibi({ id: props.id }).replies.get()
-  if (data)
-    replies.value = data as TibiItem[]
-}
-
-function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault()
-    submitReply()
-  }
 }
 
 onMounted(load)
@@ -114,42 +156,65 @@ onMounted(load)
       {{ t('tibi.notFound') }}
     </div>
     <template v-else-if="tibi">
-      <TibiCard v-bind="tibi" expanded @liked="onLiked" @deleted="onDeleted" />
-
-      <div v-if="replies.length" class="space-y-4 pt-2 pb-3">
-        <p class="text-xs text-muted-foreground font-medium select-none">
-          {{ t('tibi.replyCount', replies.length) }}
-        </p>
-        <ReplyItem v-for="reply in replies" :key="reply.id" v-bind="reply" />
+      <div id="thread-root">
+        <TibiCard v-bind="tibi" expanded @liked="onLiked" @deleted="onDeleted" @reply="startReply(tibi.id)" />
       </div>
 
-      <Card v-if="user">
-        <CardContent class="pt-4 pb-3">
-          <Textarea
-            ref="textareaRef"
-            v-model="replyContent"
-            :placeholder="t('tibi.reply.placeholder')"
-            :maxlength="maxLength"
-            class="border-none px-0 resize-none shadow-none focus-visible:ring-0 min-h-18"
-            @keydown="handleKeydown"
-          />
-        </CardContent>
-        <CardFooter class="pt-3 flex justify-between items-center">
-          <span
-            class="text-xs text-muted-foreground select-none"
-            :class="{ 'text-destructive': replyContent.length >= maxLength }"
-          >
+      <div v-if="replyingToId === tibi.id" ref="composeRef" class="border rounded-lg p-3 space-y-2">
+        <Textarea
+          v-model="replyContent"
+          :placeholder="t('tibi.reply.placeholder')"
+          :maxlength="maxLength"
+          class="border-none px-0 resize-none shadow-none focus-visible:ring-0 min-h-16"
+          @keydown="handleKeydown"
+        />
+        <div class="flex justify-between items-center">
+          <span class="text-xs text-muted-foreground" :class="{ 'text-destructive': replyContent.length >= maxLength }">
             {{ replyContent.length }}/{{ maxLength }}
           </span>
-          <Button size="sm" :disabled="!replyContent.trim() || submitting" @click="submitReply">
-            <Spinner v-if="submitting" data-icon="inline-start" />
-            {{ t('tibi.reply.submit') }}
-          </Button>
-        </CardFooter>
-        <p v-if="serverError" class="px-6 pb-4 text-sm text-destructive">
-          {{ serverError }}
-        </p>
-      </Card>
+          <div class="flex gap-2">
+            <Button variant="ghost" size="sm" @click="cancelReply">{{ t('common.cancel') }}</Button>
+            <Button size="sm" :disabled="!replyContent.trim() || submitting" @click="submitReply">
+              <Spinner v-if="submitting" data-icon="inline-start" />
+              {{ t('tibi.reply.submit') }}
+            </Button>
+          </div>
+        </div>
+        <p v-if="serverError" class="text-sm text-destructive">{{ serverError }}</p>
+      </div>
+
+      <div v-if="thread.length" class="divide-y">
+        <template v-for="item in thread" :key="item.id">
+          <div>
+            <ReplyItem
+              v-bind="item"
+              @reply="startReply(item.id)"
+            />
+            <div v-if="replyingToId === item.id" ref="composeRef" class="border rounded-lg p-3 space-y-2 mb-2 ml-10">
+              <p class="text-xs text-muted-foreground">回复 @{{ item.nickname }}</p>
+              <Textarea
+                v-model="replyContent"
+                :maxlength="maxLength"
+                class="border-none px-0 resize-none shadow-none focus-visible:ring-0 min-h-16"
+                @keydown="handleKeydown"
+              />
+              <div class="flex justify-between items-center">
+                <span class="text-xs text-muted-foreground" :class="{ 'text-destructive': replyContent.length >= maxLength }">
+                  {{ replyContent.length }}/{{ maxLength }}
+                </span>
+                <div class="flex gap-2">
+                  <Button variant="ghost" size="sm" @click="cancelReply">{{ t('common.cancel') }}</Button>
+                  <Button size="sm" :disabled="!replyContent.trim() || submitting" @click="submitReply">
+                    <Spinner v-if="submitting" data-icon="inline-start" />
+                    {{ t('tibi.reply.submit') }}
+                  </Button>
+                </div>
+              </div>
+              <p v-if="serverError" class="text-sm text-destructive">{{ serverError }}</p>
+            </div>
+          </div>
+        </template>
+      </div>
     </template>
   </div>
 </template>

@@ -112,6 +112,16 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@keyframes thread-highlight {
+  0%   { background-color: oklch(0.97 0.05 85); }
+  100% { background-color: transparent; }
+}
+
+.thread-highlight {
+  animation: thread-highlight 1.2s ease-out forwards;
+  border-radius: var(--radius-sm);
+}
+
 @layer components {
   .link {
     @apply px-1 text-foreground underline underline-offset-4 hover:text-primary;

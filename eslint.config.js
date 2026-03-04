@@ -1,7 +1,7 @@
 import antfu from '@antfu/eslint-config'
 
 export default antfu({
-  ignores: ['**/components/ui/**'],
+  ignores: ['src/components/ui/**', 'server/drizzle/**'],
   rules: {
     'vue/singleline-html-element-content-newline': 'off',
   },

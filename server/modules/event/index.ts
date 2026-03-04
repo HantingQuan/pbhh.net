@@ -32,7 +32,29 @@ bus.on('event', (event: AppEvent) => {
   }
 })
 
+const encoder = new TextEncoder()
+
 export default new Elysia()
+  .get('/sse', () => {
+    let handler: (event: AppEvent) => void
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode(': keepalive\n\n'))
+        handler = (event: AppEvent) => {
+          if (event.topic.startsWith('tibi.')) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ topic: event.topic, payload: event.payload })}\n\n`))
+          }
+        }
+        bus.on('event', handler)
+      },
+      cancel() {
+        bus.off('event', handler)
+      },
+    })
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' },
+    })
+  })
   .use(jwt({
     name: 'jwt',
     secret: Bun.env.JWT_SECRET ?? 'dev-secret-please-change-in-production',

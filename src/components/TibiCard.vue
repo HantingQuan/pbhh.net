@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Heart, MessageSquare, Trash2 } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
@@ -23,11 +23,15 @@ const props = defineProps<{
   liked: boolean
   expanded?: boolean
 }>()
-
 const emit = defineEmits<{
   deleted: [id: number]
   liked: [id: number, liked: boolean, likeCount: number]
+  reply: []
 }>()
+// Shared reactive clock — one interval for all TibiCard instances
+const now = ref(Date.now())
+let timerRefs = 0
+let timer: ReturnType<typeof setInterval> | null = null
 
 const { t } = useI18n()
 const router = useRouter()
@@ -38,7 +42,7 @@ const renderedContent = computed(() =>
 )
 
 const timeStr = computed(() => {
-  const diff = Date.now() - props.createdAt
+  const diff = now.value - props.createdAt
   if (diff < 60_000)
     return '刚刚'
   if (diff < 3_600_000)
@@ -55,13 +59,21 @@ const contentRef = ref<HTMLElement | null>(null)
 const overflows = ref(false)
 
 onMounted(() => {
-  if (props.expanded)
-    return
-  requestAnimationFrame(() => {
-    if (contentRef.value) {
-      overflows.value = contentRef.value.scrollHeight > contentRef.value.clientHeight
-    }
-  })
+  if (timerRefs++ === 0)
+    timer = setInterval(() => { now.value = Date.now() }, 60_000)
+  if (!props.expanded) {
+    requestAnimationFrame(() => {
+      if (contentRef.value)
+        overflows.value = contentRef.value.scrollHeight > contentRef.value.clientHeight
+    })
+  }
+})
+
+onUnmounted(() => {
+  if (--timerRefs === 0 && timer) {
+    clearInterval(timer)
+    timer = null
+  }
 })
 
 async function handleLike() {
@@ -131,7 +143,7 @@ async function confirmDelete() {
         <Button
           variant="ghost" size="sm"
           class="gap-1 text-muted-foreground h-7 px-2"
-          @click="router.push(`/tibi/${props.id}#reply`)"
+          @click="expanded ? emit('reply') : router.push(`/tibi/${props.id}#reply`)"
         >
           <MessageSquare class="size-4" />
           {{ replyCount }}

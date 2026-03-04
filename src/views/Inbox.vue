@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { Inbox } from 'lucide-vue-next'
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Spinner } from '@/components/ui/spinner'
-import { PROVIDERS, parseAvatar } from '@/composables/avatar'
+import { parseAvatar, PROVIDERS } from '@/composables/avatar'
 import { api, unreadCount } from '@/lib/api'
 
 interface NotificationItem {

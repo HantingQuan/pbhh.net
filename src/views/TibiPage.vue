@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { Translation, useI18n } from 'vue-i18n'
 import TibiCard from '@/components/TibiCard.vue'
 import TibiCompose from '@/components/TibiCompose.vue'
@@ -40,7 +40,24 @@ function onLiked(id: number, liked: boolean, likeCount: number) {
   }
 }
 
-onMounted(loadTibis)
+let sse: EventSource | null = null
+
+onMounted(() => {
+  loadTibis()
+  sse = new EventSource(`${window.location.origin}/api/sse`)
+  sse.onmessage = (e) => {
+    const { topic, payload } = JSON.parse(e.data) as { topic: string, payload: { username?: string } }
+    if (topic === 'tibi.created') {
+      if (!props.username || props.username === payload.username)
+        loadTibis()
+    }
+  }
+})
+
+onUnmounted(() => {
+  sse?.close()
+  sse = null
+})
 </script>
 
 <template>
