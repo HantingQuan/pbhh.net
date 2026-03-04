@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Heart, Trash2 } from 'lucide-vue-next'
+import { Heart, MessageSquare, Trash2 } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -19,6 +19,7 @@ const props = defineProps<{
   avatar: string
   createdAt: number
   likeCount: number
+  replyCount: number
   liked: boolean
   expanded?: boolean
 }>()
@@ -63,10 +64,6 @@ onMounted(() => {
   })
 })
 
-function goDetail() {
-  router.push(`/tibi/${props.id}`)
-}
-
 async function handleLike() {
   if (!user.value) {
     router.push('/login')
@@ -88,22 +85,22 @@ async function confirmDelete() {
 
 <template>
   <Card>
-    <CardContent class="pt-4 cursor-pointer" @click="goDetail">
+    <CardContent class="pt-4">
       <div class="flex items-center gap-2 mb-3 select-none">
-        <RouterLink :to="`/tibi/@${username}`">
+        <RouterLink :to="`/@${username}/tibi`">
           <Avatar class="size-8 border">
             <AvatarImage :src="avatarUrl" :alt="username" />
             <AvatarFallback>{{ nickname.slice(0, 2) }}</AvatarFallback>
           </Avatar>
         </RouterLink>
         <div class="flex flex-col leading-none gap-0.5">
-          <RouterLink :to="`/@${username}`" class="text-sm font-medium">
-            {{ nickname }} {{ expanded }}
+          <RouterLink :to="`/@${username}`" class="text-sm font-medium hover:underline">
+            {{ nickname }}
           </RouterLink>
           <span class="text-xs text-muted-foreground">{{ timeStr }}</span>
         </div>
       </div>
-      <div>
+      <div class="cursor-pointer" @click="router.push(`/tibi/${props.id}#reply`)">
         <p v-if="title" class="font-semibold text-sm mb-1">{{ title }}</p>
         <div class="relative">
           <div
@@ -115,52 +112,57 @@ async function confirmDelete() {
           <div
             v-if="overflows"
             class="absolute bottom-0 left-0 right-0 h-16 bg-linear-to-t from-card to-transparent flex items-end"
-          />
+          >
+            <span class="text-xs text-muted-foreground">{{ t('tibi.readMore') }}</span>
+          </div>
         </div>
       </div>
-      <div class="flex flex-row-reverse items-center">
-        <div class="flex flex-row-reverse items-center gap-1 select-none">
-          <Button
-            variant="ghost"
-            size="sm"
-            class="gap-1 text-muted-foreground h-7 px-2"
-            :class="{ 'text-red-500': liked }"
-            @click.prevent="handleLike"
-          >
-            <Heart class="size-4" :class="{ 'fill-current': liked }" />
-            {{ likeCount }}
-          </Button>
-          <AlertDialog v-if="isOwn">
-            <AlertDialogTrigger as-child>
-              <Button
-                variant="ghost"
-                size="sm"
-                class="text-muted-foreground hover:text-destructive h-7 px-2"
+      <div class="flex flex-row-reverse items-center gap-1 select-none mt-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="gap-1 text-muted-foreground h-7 px-2"
+          :class="{ 'text-red-500': liked }"
+          @click="handleLike"
+        >
+          <Heart class="size-4" :class="{ 'fill-current': liked }" />
+          {{ likeCount }}
+        </Button>
+        <Button
+          variant="ghost" size="sm"
+          class="gap-1 text-muted-foreground h-7 px-2"
+          @click="router.push(`/tibi/${props.id}#reply`)"
+        >
+          <MessageSquare class="size-4" />
+          {{ replyCount }}
+        </Button>
+        <AlertDialog v-if="isOwn">
+          <AlertDialogTrigger as-child>
+            <Button
+              variant="ghost"
+              size="sm"
+              class="text-muted-foreground hover:text-destructive h-7 px-2"
+            >
+              <Trash2 class="size-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{{ t('tibi.deleteConfirm') }}</AlertDialogTitle>
+              <AlertDialogDescription>{{ t('tibi.deleteDescription') }}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
+              <AlertDialogAction
+                class="bg-destructive text-white hover:bg-destructive/90"
+                :disabled="deleting"
+                @click.prevent="confirmDelete"
               >
-                <Trash2 class="size-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{{ t('tibi.deleteConfirm') }}</AlertDialogTitle>
-                <AlertDialogDescription>{{ t('tibi.deleteDescription') }}</AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{{ t('common.cancel') }}</AlertDialogCancel>
-                <AlertDialogAction
-                  class="bg-destructive text-white hover:bg-destructive/90"
-                  :disabled="deleting"
-                  @click.prevent="confirmDelete"
-                >
-                  {{ t('common.delete') }}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-        <div v-if="overflows" class="grow text-xs text-muted-foreground">
-          {{ t('tibi.readMore') }}
-        </div>
+                {{ t('common.delete') }}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </CardContent>
   </Card>

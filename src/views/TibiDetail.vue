@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { replyBody } from '@server/tibi/model'
 import { ChevronLeft } from 'lucide-vue-next'
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import ReplyItem from '@/components/ReplyItem.vue'
 import TibiCard from '@/components/TibiCard.vue'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ interface TibiItem {
   avatar: string
   createdAt: number
   likeCount: number
+  replyCount: number
   liked: boolean
 }
 
@@ -29,6 +30,7 @@ const props = defineProps<{ id: number }>()
 
 const { t } = useI18n()
 const router = useRouter()
+const route = useRoute()
 
 const tibi = ref<TibiItem | null>(null)
 const replies = ref<TibiItem[]>([])
@@ -39,6 +41,8 @@ const replyContent = ref('')
 const submitting = ref(false)
 const serverError = ref('')
 const maxLength = replyBody.properties.content.maxLength!
+
+const textareaRef = ref<{ $el: HTMLTextAreaElement } | null>(null)
 
 async function load() {
   loading.value = true
@@ -53,6 +57,11 @@ async function load() {
   }
   tibi.value = tibiData as TibiItem
   replies.value = (repliesData ?? []) as TibiItem[]
+
+  if (route.hash === '#reply' && user.value) {
+    await nextTick()
+    textareaRef.value?.$el?.focus()
+  }
 }
 
 function onLiked(_id: number, liked: boolean, likeCount: number) {
@@ -81,6 +90,13 @@ async function submitReply() {
     replies.value = data as TibiItem[]
 }
 
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    submitReply()
+  }
+}
+
 onMounted(load)
 </script>
 
@@ -98,9 +114,9 @@ onMounted(load)
       {{ t('tibi.notFound') }}
     </div>
     <template v-else-if="tibi">
-      <TibiCard v-bind="tibi" :collapsible="false" expanded @liked="onLiked" @deleted="onDeleted" />
+      <TibiCard v-bind="tibi" expanded @liked="onLiked" @deleted="onDeleted" />
 
-      <div v-if="replies.length" class="space-y-4 pt-2">
+      <div v-if="replies.length" class="space-y-4 pt-2 pb-3">
         <p class="text-xs text-muted-foreground font-medium select-none">
           {{ t('tibi.replyCount', replies.length) }}
         </p>
@@ -110,10 +126,12 @@ onMounted(load)
       <Card v-if="user">
         <CardContent class="pt-4 pb-3">
           <Textarea
+            ref="textareaRef"
             v-model="replyContent"
             :placeholder="t('tibi.reply.placeholder')"
             :maxlength="maxLength"
             class="border-none px-0 resize-none shadow-none focus-visible:ring-0 min-h-18"
+            @keydown="handleKeydown"
           />
         </CardContent>
         <CardFooter class="pt-3 flex justify-between items-center">

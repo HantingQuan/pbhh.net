@@ -1,4 +1,5 @@
-import { and, asc, count, desc, eq, isNull, SQL } from 'drizzle-orm'
+import type { SQL } from 'drizzle-orm'
+import { and, asc, count, desc, eq, isNull, sql } from 'drizzle-orm'
 import { db, tibiLikes, tibis, users } from 'server/db'
 
 function query(where?: SQL, order: 'asc' | 'desc' = 'desc') {
@@ -13,6 +14,7 @@ function query(where?: SQL, order: 'asc' | 'desc' = 'desc') {
       avatar: users.avatar,
       createdAt: tibis.createdAt,
       likeCount: count(tibiLikes.username),
+      replyCount: sql<number>`(select count(*) from ${tibis} r where r.parent_id = ${tibis.id})`,
     })
     .from(tibis)
     .leftJoin(users, eq(tibis.username, users.username))
