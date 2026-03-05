@@ -7,7 +7,7 @@ import { api, user } from '@/lib/api'
 
 const props = defineProps<{ username?: string }>()
 
-type PostItem = NonNullable<Awaited<ReturnType<typeof api.post.get>>['data']>[number]
+type PostItem = NonNullable<Awaited<ReturnType<typeof api.posts.get>>['data']>[number]
 
 const { t } = useI18n()
 
@@ -18,7 +18,7 @@ const canCompose = () => !props.username || props.username === user.value?.usern
 
 async function loadPosts() {
   loading.value = true
-  const { data } = await api.post.get({ query: { username: props.username } })
+  const { data } = await api.posts.get({ query: { username: props.username } })
   if (data)
     posts.value = data
   loading.value = false
@@ -71,13 +71,15 @@ onUnmounted(() => {
     </div>
 
     <PostCompose v-if="canCompose() && user" @posted="onPosted" />
-    <Translation v-else-if="!user && !username" keypath="post.loginRequired" class="text-center text-muted-foreground text-sm">
-      <template #login>
-        <RouterLink to="/login" class="link">
-          {{ t('home.loginLink') }}
-        </RouterLink>
-      </template>
-    </Translation>
+    <div v-else-if="!user && !username" class="text-center text-muted-foreground text-sm pb-4">
+      <Translation keypath="post.loginRequired">
+        <template #login>
+          <RouterLink to="/login" class="link">
+            {{ t('home.loginLink') }}
+          </RouterLink>
+        </template>
+      </Translation>
+    </div>
     <div v-if="posts.length === 0 && !loading" class="text-center text-muted-foreground py-8">
       {{ t('post.empty') }}
     </div>

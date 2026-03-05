@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { replyBody } from '@server/post/model'
 import { ChevronLeft } from 'lucide-vue-next'
+import { replyBody } from 'server/modules/posts/model'
 import { nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -62,7 +62,7 @@ const composeRef = ref<HTMLElement | null>(null)
 
 async function load() {
   loading.value = true
-  const { data: postData } = await api.post({ id: props.id }).get()
+  const { data: postData } = await api.posts({ id: props.id }).get()
   loading.value = false
 
   if (!postData) {
@@ -84,7 +84,7 @@ async function load() {
 }
 
 async function loadThread() {
-  const { data } = await api.post({ id: props.id }).thread.get()
+  const { data } = await api.posts({ id: props.id }).thread.get()
   if (data)
     thread.value = data as ThreadItem[]
 }
@@ -110,7 +110,7 @@ async function submitReply() {
     return
   submitting.value = true
   serverError.value = ''
-  const { error } = await api.post({ id: replyingToId.value }).reply.post({ content: replyContent.value.trim() })
+  const { error } = await api.posts({ id: replyingToId.value }).reply.post({ content: replyContent.value.trim() })
   submitting.value = false
   if (error) {
     serverError.value = t('post.errors.postFailed')
@@ -187,7 +187,7 @@ onMounted(load)
         <p v-if="serverError" class="text-sm text-destructive">{{ serverError }}</p>
       </div>
 
-      <div v-if="thread.length" class="divide-y">
+      <div v-if="thread.length">
         <template v-for="item in thread" :key="item.id">
           <div>
             <ReplyItem

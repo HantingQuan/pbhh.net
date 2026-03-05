@@ -59,7 +59,7 @@ async function handleLike() {
     router.push('/login')
     return
   }
-  const { data } = await api.post({ id: props.id }).like.post()
+  const { data } = await api.posts({ id: props.id }).like.post()
   if (data) {
     emit('liked', props.id, data.liked, props.likeCount + (data.liked ? 1 : -1))
   }
@@ -67,7 +67,7 @@ async function handleLike() {
 
 async function confirmDelete() {
   deleting.value = true
-  await api.post({ id: props.id }).delete()
+  await api.posts({ id: props.id }).delete()
   deleting.value = false
   emit('deleted', props.id)
 }

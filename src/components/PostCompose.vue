@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { createPostBody } from '@server/post/model'
+import { createPostBody } from 'server/modules/posts/model'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,7 @@ async function submit() {
     return
   submitting.value = true
   serverError.value = ''
-  const { error } = await api.post.post({
+  const { error } = await api.posts.post({
     title: title.value.trim() || undefined,
     content: content.value.trim(),
   })

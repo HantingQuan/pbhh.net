@@ -11,7 +11,7 @@ export default new Elysia()
     secret: Bun.env.JWT_SECRET ?? 'dev-secret-please-change-in-production',
     exp: '7d',
   }))
-  .get('/post', async ({ headers, jwt, query }) => {
+  .get('/posts', async ({ headers, jwt, query }) => {
     const authorization = headers.authorization ?? ''
     let viewerUsername: string | undefined
     if (authorization.startsWith('Bearer ')) {
@@ -23,7 +23,7 @@ export default new Elysia()
   }, {
     query: t.Object({ username: t.Optional(t.String()) }),
   })
-  .post('/post', async ({ headers, jwt, body, status }) => {
+  .post('/posts', async ({ headers, jwt, body, status }) => {
     const authorization = headers.authorization ?? ''
     if (!authorization.startsWith('Bearer '))
       return status(401, { message: 'error.unauthorized' })
@@ -39,7 +39,7 @@ export default new Elysia()
       return status(400, { message: 'error.badRequest', detail: error })
     },
   })
-  .delete('/post/:id', async ({ headers, jwt, params, status }) => {
+  .delete('/posts/:id', async ({ headers, jwt, params, status }) => {
     const authorization = headers.authorization ?? ''
     if (!authorization.startsWith('Bearer '))
       return status(401, { message: 'error.unauthorized' })
@@ -53,7 +53,7 @@ export default new Elysia()
       return status(403, { message: 'error.forbidden' })
     return {}
   })
-  .post('/post/:id/like', async ({ headers, jwt, params, status }) => {
+  .post('/posts/:id/like', async ({ headers, jwt, params, status }) => {
     const authorization = headers.authorization ?? ''
     if (!authorization.startsWith('Bearer '))
       return status(401, { message: 'error.unauthorized' })
@@ -66,7 +66,7 @@ export default new Elysia()
     bus.publish('post.liked', { postId: Number(params.id), actorUsername: payload.sub, liked: result })
     return { liked: result }
   })
-  .get('/post/:id', async ({ headers, jwt, params, status }) => {
+  .get('/posts/:id', async ({ headers, jwt, params, status }) => {
     const authorization = headers.authorization ?? ''
     let viewerUsername: string | undefined
     if (authorization.startsWith('Bearer ')) {
@@ -79,7 +79,7 @@ export default new Elysia()
       return status(404, { message: 'error.postNotFound' })
     return post
   })
-  .get('/post/:id/thread', async ({ headers, jwt, params }) => {
+  .get('/posts/:id/thread', async ({ headers, jwt, params }) => {
     const authorization = headers.authorization ?? ''
     let viewerUsername: string | undefined
     if (authorization.startsWith('Bearer ')) {
@@ -89,7 +89,7 @@ export default new Elysia()
     }
     return PostService.listThread(Number(params.id), viewerUsername)
   })
-  .post('/post/:id/reply', async ({ headers, jwt, params, body, status }) => {
+  .post('/posts/:id/reply', async ({ headers, jwt, params, body, status }) => {
     const authorization = headers.authorization ?? ''
     if (!authorization.startsWith('Bearer '))
       return status(401, { message: 'error.unauthorized' })

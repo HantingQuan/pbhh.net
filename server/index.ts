@@ -5,8 +5,8 @@ const app = new Elysia({ prefix: '/api' })
   .use(cors())
   .use(import('@server/auth'))
   .use(import('@server/event'))
-  .use(import('@server/post'))
   .use(import('@server/notification'))
+  .use(import('@server/posts'))
   .listen(3000)
 
 export type App = typeof app

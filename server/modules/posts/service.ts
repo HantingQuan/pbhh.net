@@ -14,14 +14,14 @@ function query(where?: SQL, order: 'asc' | 'desc' = 'desc') {
       avatar: users.avatar,
       createdAt: posts.createdAt,
       likeCount: count(postLikes.username),
-      replyCount: sql<number>`(
+      replyCount: sql`(
         WITH RECURSIVE tree(id) AS (
-          SELECT id FROM posts WHERE parent_id = ${posts.id}
+          SELECT c.id FROM posts c WHERE c.parent_id = ${posts.id}
           UNION ALL
           SELECT p.id FROM posts p INNER JOIN tree ON p.parent_id = tree.id
         )
         SELECT COUNT(*) FROM tree
-      )`,
+      )` as SQL<number>,
     })
     .from(posts)
     .leftJoin(users, eq(posts.username, users.username))
@@ -85,9 +85,9 @@ export function get(id: number, viewerUsername?: string) {
 export function listThread(rootId: number, viewerUsername?: string) {
   const treeIds = db.all<{ id: number }>(sql`
     WITH RECURSIVE tree(id) AS (
-      SELECT id FROM posts WHERE parent_id = ${rootId}
+      SELECT id FROM ${posts} WHERE parent_id = ${rootId}
       UNION ALL
-      SELECT p.id FROM posts p INNER JOIN tree ON p.parent_id = tree.id
+      SELECT p.id FROM ${posts} p INNER JOIN tree ON p.parent_id = tree.id
     )
     SELECT id FROM tree
   `).map(r => r.id)
