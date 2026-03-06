@@ -14,9 +14,13 @@ export const optionalAuth = new Elysia({ name: 'optional-auth' })
   })
 
 export const requireAuth = new Elysia({ name: 'require-auth' })
-  .use(optionalAuth)
-  .derive({ as: 'scoped' }, async ({ username, status }) => {
-    if (!username)
+  .use(jwtPlugin)
+  .derive({ as: 'scoped' }, async ({ headers, jwt, status }) => {
+    const authorization = headers.authorization ?? ''
+    if (!authorization.startsWith('Bearer '))
       return status(401, { message: 'error.unauthorized' })
-    return { username }
+    const payload = await jwt.verify(authorization.slice(7))
+    if (!payload || typeof payload.sub !== 'string')
+      return status(401, { message: 'error.unauthorized' })
+    return { username: payload.sub }
   })

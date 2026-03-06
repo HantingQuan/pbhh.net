@@ -5,7 +5,7 @@ import { Elysia, t } from 'elysia'
 import { bus } from '../events/bus'
 import { adminAuth } from './guard'
 import { logBuffer, logListeners } from './logger'
-import { queryTable, tableNames } from './service'
+import { deleteTableRow, grantCapability, queryTable, tableNames } from './service'
 
 const wsHandlers = new Map<ElysiaWS, {
   logFn: (entry: LogEntry) => void
@@ -23,6 +23,16 @@ export default new Elysia({ prefix: '/admin' })
       return status(400, { message: 'error.badRequest' })
     return data
   })
+  .delete('/db/:table', ({ params, body, status }) => {
+    const ok = deleteTableRow(params.table, body as Record<string, unknown>)
+    if (!ok)
+      return status(400, { message: 'error.badRequest' })
+    return { ok: true }
+  }, { body: t.Record(t.String(), t.Unknown()) })
+  .post('/db/user_capabilities', ({ body }) => {
+    grantCapability(body.username, body.capability)
+    return { ok: true }
+  }, { body: t.Object({ username: t.String(), capability: t.String() }) })
   .ws('/ws', {
     query: t.Object({ token: t.String() }),
     open(ws) {

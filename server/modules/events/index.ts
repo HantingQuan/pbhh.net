@@ -2,7 +2,6 @@ import type { AppEvent } from './bus'
 import { Buffer } from 'node:buffer'
 import { Elysia, t } from 'elysia'
 import { requireAuth } from '../auth/guard'
-import { getByUsername } from '../auth/service'
 import { jwtPlugin } from '../jwt'
 import { bus } from './bus'
 import { pushBody, subscribeBody } from './model'
@@ -127,10 +126,6 @@ export default new Elysia({ prefix: '/events' })
       const { topic, payload } = msg as { type: string, topic?: unknown, payload?: unknown }
       if (typeof topic !== 'string' || !topic)
         return
-      if (!getByUsername(client.username)?.capabilities.includes('event.publish')) {
-        ws.send(JSON.stringify({ error: 'error.forbidden' }))
-        return
-      }
       bus.publish(`custom.${client.username}.${topic}`, payload)
     },
     close(ws) {
@@ -170,10 +165,12 @@ export default new Elysia({ prefix: '/events' })
     })
   }, { query: streamQuery })
   .use(requireAuth)
-  .post('/subscribe', ({ username, body, status }) => {
-    if (!getByUsername(username)?.capabilities.includes('event.subscribe'))
-      return status(403, { message: 'error.forbidden' })
-    webhooks.set(username, { url: body.url, topics: body.topics ?? ['*'], failures: 0 })
+  .post('/subscribe', ({ username, body }) => {
+    webhooks.set(username, {
+      url: body.url,
+      topics: body.topics ?? ['*'],
+      failures: 0,
+    })
     return { ok: true }
   }, {
     body: subscribeBody,
@@ -185,9 +182,7 @@ export default new Elysia({ prefix: '/events' })
     webhooks.delete(username)
     return { ok: true }
   })
-  .post('/publish', ({ username, body, status }) => {
-    if (!getByUsername(username)?.capabilities.includes('event.publish'))
-      return status(403, { message: 'error.forbidden' })
+  .post('/publish', ({ username, body }) => {
     bus.publish(`custom.${username}.${body.topic}`, body.payload)
     return { ok: true }
   }, {

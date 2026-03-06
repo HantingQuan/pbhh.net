@@ -27,8 +27,6 @@ export const changePasswordBody = t.Object({
 export type ChangePasswordBody = typeof changePasswordBody.static
 
 export const capability = t.Union([
-  t.Literal('event.subscribe'),
-  t.Literal('event.publish'),
   t.Literal('admin'),
 ])
 export type Capability = typeof capability.static

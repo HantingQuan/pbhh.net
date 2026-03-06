@@ -143,6 +143,50 @@ async function loadTable() {
 
 watch(selectedTable, loadTable)
 
+// ── Database CRUD ─────────────────────────────────────────────────────────────
+const TABLE_PK: Record<string, string[]> = {
+  posts: ['id'],
+  notifications: ['id'],
+  user_capabilities: ['username', 'capability'],
+  post_likes: ['postId', 'username'],
+  user_bindings: ['username', 'platform'],
+}
+
+const canDelete = computed(() => selectedTable.value in TABLE_PK)
+
+async function deleteRow(row: Record<string, unknown>) {
+  const pkCols = TABLE_PK[selectedTable.value]
+  if (!pkCols)
+    return
+  const pk: Record<string, unknown> = {}
+  for (const col of pkCols) pk[col] = row[col]
+  const res = await fetch(`/api/admin/db/${selectedTable.value}`, {
+    method: 'DELETE',
+    headers: { ...authHeaders.value, 'Content-Type': 'application/json' },
+    body: JSON.stringify(pk),
+  })
+  if (res.ok)
+    tableRows.value = tableRows.value.filter(r => !pkCols.every(col => r[col] === row[col]))
+}
+
+const grantUser = ref('')
+const grantCap = ref('')
+
+async function submitGrant() {
+  if (!grantUser.value || !grantCap.value)
+    return
+  const res = await fetch('/api/admin/db/user_capabilities', {
+    method: 'POST',
+    headers: { ...authHeaders.value, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: grantUser.value, capability: grantCap.value }),
+  })
+  if (res.ok) {
+    await loadTable()
+    grantUser.value = ''
+    grantCap.value = ''
+  }
+}
+
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
 onMounted(() => {
   connectWS()
@@ -298,7 +342,7 @@ function cellValue(v: unknown) {
 
     <!-- Database -->
     <div v-show="tab === 'database'" class="flex-1 flex flex-col overflow-hidden">
-      <div class="flex items-center gap-2 px-4 py-2 border-b shrink-0">
+      <div class="flex items-center gap-2 px-4 py-2 border-b shrink-0 flex-wrap">
         <select
           v-model="selectedTable"
           class="text-sm border rounded px-2 py-1 bg-background"
@@ -312,6 +356,14 @@ function cellValue(v: unknown) {
           刷新
         </Button>
         <span class="text-xs text-muted-foreground">{{ tableRows.length }} 条</span>
+        <template v-if="selectedTable === 'user_capabilities'">
+          <div class="h-4 border-l" />
+          <input v-model="grantUser" placeholder="用户名" class="text-xs border rounded px-2 py-1 bg-background w-24">
+          <input v-model="grantCap" placeholder="权限" class="text-xs border rounded px-2 py-1 bg-background w-32">
+          <Button size="sm" variant="outline" :disabled="!grantUser || !grantCap" @click="submitGrant">
+            授权
+          </Button>
+        </template>
       </div>
       <div class="flex-1 overflow-auto">
         <table class="text-xs w-full border-collapse">
@@ -320,10 +372,11 @@ function cellValue(v: unknown) {
               <th
                 v-for="col in tableColumns"
                 :key="col"
-                class="text-left px-3 py-2 font-medium text-muted-foreground border-r last:border-r-0 whitespace-nowrap"
+                class="text-left px-3 py-2 font-medium text-muted-foreground border-r whitespace-nowrap"
               >
                 {{ col }}
               </th>
+              <th v-if="canDelete" class="px-3 py-2" />
             </tr>
           </thead>
           <tbody>
@@ -335,10 +388,15 @@ function cellValue(v: unknown) {
               <td
                 v-for="col in tableColumns"
                 :key="col"
-                class="px-3 py-1.5 border-r last:border-r-0 max-w-60 truncate"
+                class="px-3 py-1.5 border-r max-w-60 truncate"
                 :title="String(row[col] ?? '')"
               >
                 {{ cellValue(row[col]) }}
+              </td>
+              <td v-if="canDelete" class="px-3 py-1.5">
+                <button class="text-xs text-red-500 hover:text-red-700" @click="deleteRow(row)">
+                  删除
+                </button>
               </td>
             </tr>
           </tbody>
