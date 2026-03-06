@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { Heart, MessageSquare } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { Translation, useI18n } from 'vue-i18n'
 import { RouterLink, useRouter } from 'vue-router'
 import DeleteConfirmDialog from '@/components/DeleteConfirmDialog.vue'
 import { Button } from '@/components/ui/button'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useMarkdown } from '@/composables/useMarkdown'
 import useTimeStr from '@/composables/useTimeStr'
 import { api, user } from '@/lib/api'
 
@@ -38,7 +39,7 @@ const { t } = useI18n()
 const router = useRouter()
 const timeStr = useTimeStr()
 
-const renderedContent = computed(() => props.content.trim().replace(/\n/g, '<br>'))
+const renderedContent = useMarkdown(() => props.content)
 const isOwn = computed(() => user.value?.username === props.username)
 
 const contentRef = ref<HTMLElement | null>(null)
@@ -127,7 +128,7 @@ function handleReplyClick() {
       <p v-if="title" class="font-bold text-sm mb-1">{{ title }}</p>
       <div
         ref="contentRef"
-        class="text-sm leading-relaxed wrap-break-word"
+        class="prose prose-sm max-w-none wrap-break-word"
         :class="{ 'line-clamp-6': !expanded }"
         v-html="renderedContent"
       />

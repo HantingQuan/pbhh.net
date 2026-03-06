@@ -12,7 +12,7 @@ const postList = ref<InstanceType<typeof PostList> | null>(null)
 let sse: EventSource | null = null
 
 onMounted(() => {
-  sse = new EventSource(`${window.location.origin}/api/sse`)
+  sse = new EventSource(`${window.location.origin}/api/events/sse`)
   sse.onmessage = (e) => {
     const { topic } = JSON.parse(e.data) as { topic: string }
     if (topic === 'post.created')
