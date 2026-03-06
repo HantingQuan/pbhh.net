@@ -33,6 +33,7 @@ const emit = defineEmits<{
   deleted: [id: number]
   liked: [id: number, liked: boolean, likeCount: number]
   reply: []
+  quoteClick: [id: number]
 }>()
 
 const { t } = useI18n()
@@ -93,7 +94,7 @@ function handleReplyClick() {
     <div
       v-if="parentId && parentNickname"
       class="px-3 py-2 border rounded-lg text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors truncate"
-      @click.stop="router.push(`/post/${parentId}`)"
+      @click.stop="emit('quoteClick', parentId!)"
     >
       <Translation v-if="parentContent" keypath="post.quote" tag="span">
         <template #nickname>
@@ -105,7 +106,8 @@ function handleReplyClick() {
     </div>
     <div v-if="parentId && parentNickname" class="ml-5 w-0.5 h-3 bg-border" />
     <article
-      class="px-4 py-3 border rounded-xl bg-card transition-colors"
+      :id="`post-${id}`"
+      class="px-4 py-3 border rounded-xl bg-card transition-[colors,box-shadow]"
       :class="{ 'hover:bg-muted/40 cursor-pointer': !expanded }"
       @click="!expanded && router.push(`/post/${id}`)"
     >

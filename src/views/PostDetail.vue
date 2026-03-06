@@ -105,6 +105,18 @@ function onReplyDeleted(id: number) {
   thread.value = thread.value.filter(item => item.id !== id)
 }
 
+function onQuoteClick(parentId: number) {
+  const el = document.getElementById(`post-${parentId}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('ring-2', 'ring-primary')
+    setTimeout(() => el.classList.remove('ring-2', 'ring-primary'), 1000)
+  }
+  else {
+    router.push(`/post/${parentId}`)
+  }
+}
+
 onMounted(load)
 watch(() => props.id, load)
 </script>
@@ -131,6 +143,7 @@ watch(() => props.id, load)
         @liked="onLiked"
         @deleted="onDeleted"
         @reply="startReply(post.id)"
+        @quote-click="onQuoteClick"
       />
 
       <PostCompose
@@ -155,6 +168,7 @@ watch(() => props.id, load)
               :parent-content="item.parentId === post.id ? undefined : item.parentContent"
               @reply="startReply(item.id)"
               @deleted="onReplyDeleted"
+              @quote-click="onQuoteClick"
             />
             <PostCompose
               v-if="replyingToId === item.id"

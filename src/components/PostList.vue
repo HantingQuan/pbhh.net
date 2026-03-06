@@ -51,6 +51,7 @@ defineExpose({ reload: load })
       :disable-user-link="disableUserLink"
       @deleted="onDeleted"
       @liked="onLiked"
+      @quote-click="id => $router.push(`/post/${id}`)"
     />
   </div>
 </template>
