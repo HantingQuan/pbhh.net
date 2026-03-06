@@ -17,7 +17,10 @@ function getActor(username: string) {
 function getBindings(username: string): Record<string, string> {
   return Object.fromEntries(
     db
-      .select({ platform: userBindings.platform, platformId: userBindings.platformId })
+      .select({
+        platform: userBindings.platform,
+        platformId: userBindings.platformId,
+      })
       .from(userBindings)
       .where(eq(userBindings.username, username))
       .all()
@@ -28,13 +31,22 @@ function getBindings(username: string): Record<string, string> {
 function onPostLiked({ postId, actorUsername, liked }: AppEventMap['post.liked']) {
   if (!liked)
     return
-  const post = db.select({ username: posts.username, content: posts.content }).from(posts).where(eq(posts.id, postId)).get()
+  const post = db
+    .select({ username: posts.username, content: posts.content })
+    .from(posts)
+    .where(eq(posts.id, postId))
+    .get()
   if (!post || post.username === actorUsername)
     return
   if (!isPrefEnabled(post.username, 'like'))
     return
   const actor = getActor(actorUsername)
-  db.insert(notifications).values({ username: post.username, type: 'like', actorUsername, postId }).run()
+  db.insert(notifications).values({
+    username: post.username,
+    type: 'like',
+    actorUsername,
+    postId,
+  }).run()
   bus.publish('notify.post.liked', {
     recipientUsername: post.username,
     recipientBindings: getBindings(post.username),
@@ -48,11 +60,20 @@ function onPostLiked({ postId, actorUsername, liked }: AppEventMap['post.liked']
 
 function onPostCreated({ username: actorUsername, postId }: AppEventMap['post.created']) {
   const actor = getActor(actorUsername)
-  const post = db.select({ content: posts.content }).from(posts).where(eq(posts.id, postId)).get()
+  const post = db
+    .select({ content: posts.content })
+    .from(posts)
+    .where(eq(posts.id, postId))
+    .get()
   for (const username of FollowService.getFollowers(actorUsername)) {
     if (!isPrefEnabled(username, 'post'))
       continue
-    db.insert(notifications).values({ username, type: 'post', actorUsername, postId }).run()
+    db.insert(notifications).values({
+      username,
+      type: 'post',
+      actorUsername,
+      postId,
+    }).run()
     bus.publish('notify.post.created', {
       recipientUsername: username,
       recipientBindings: getBindings(username),
@@ -66,14 +87,28 @@ function onPostCreated({ username: actorUsername, postId }: AppEventMap['post.cr
 }
 
 function onPostReplied({ parentId, actorUsername, replyId }: AppEventMap['post.replied']) {
-  const post = db.select({ username: posts.username, content: posts.content }).from(posts).where(eq(posts.id, parentId)).get()
+  const post = db
+    .select({ username: posts.username, content: posts.content })
+    .from(posts)
+    .where(eq(posts.id, parentId))
+    .get()
   if (!post || post.username === actorUsername)
     return
   if (!isPrefEnabled(post.username, 'reply'))
     return
   const actor = getActor(actorUsername)
-  const reply = db.select({ content: posts.content }).from(posts).where(eq(posts.id, replyId)).get()
-  db.insert(notifications).values({ username: post.username, type: 'reply', actorUsername, postId: parentId, replyId }).run()
+  const reply = db
+    .select({ content: posts.content })
+    .from(posts)
+    .where(eq(posts.id, replyId))
+    .get()
+  db.insert(notifications).values({
+    username: post.username,
+    type: 'reply',
+    actorUsername,
+    postId: parentId,
+    replyId,
+  }).run()
   bus.publish('notify.post.replied', {
     recipientUsername: post.username,
     recipientBindings: getBindings(post.username),

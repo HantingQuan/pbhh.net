@@ -40,7 +40,11 @@ export default new Elysia()
     const result = PostService.toggleLike(Number(params.id), username)
     if (result === null)
       return status(404, { message: 'error.postNotFound' })
-    bus.publish('post.liked', { postId: Number(params.id), actorUsername: username, liked: result })
+    bus.publish('post.liked', {
+      postId: Number(params.id),
+      actorUsername: username,
+      liked: result,
+    })
     return { liked: result }
   })
   .post('/posts/:id/reply', ({ params, body, status, username }) => {
@@ -48,7 +52,11 @@ export default new Elysia()
     if (!parentExists)
       return status(404, { message: 'error.postNotFound' })
     const replyId = PostService.create(username, body.content, undefined, Number(params.id))
-    bus.publish('post.replied', { parentId: Number(params.id), actorUsername: username, replyId })
+    bus.publish('post.replied', {
+      parentId: Number(params.id),
+      actorUsername: username,
+      replyId,
+    })
     return status(201, {})
   }, {
     body: replyBody,

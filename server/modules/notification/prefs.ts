@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
-import { db, notificationPrefs, NOTIFICATION_TYPES } from 'server/db'
 import type { NotificationType } from 'server/db'
+import { eq } from 'drizzle-orm'
+import { db, NOTIFICATION_TYPES, notificationPrefs } from 'server/db'
 
 export type NotificationPrefs = Record<NotificationType, boolean>
 
@@ -21,7 +21,10 @@ export function setPrefs(username: string, prefs: Partial<NotificationPrefs>) {
   for (const [type, enabled] of Object.entries(prefs) as [NotificationType, boolean][]) {
     db.insert(notificationPrefs)
       .values({ username, type, enabled })
-      .onConflictDoUpdate({ target: [notificationPrefs.username, notificationPrefs.type], set: { enabled } })
+      .onConflictDoUpdate({
+        target: [notificationPrefs.username, notificationPrefs.type],
+        set: { enabled },
+      })
       .run()
   }
 }

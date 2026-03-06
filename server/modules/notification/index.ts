@@ -1,8 +1,7 @@
-import { t } from 'elysia'
-import { Elysia } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { requireAuth } from '../auth/guard'
-import * as NotificationService from './service'
 import * as PrefsService from './prefs'
+import * as NotificationService from './service'
 import './service'
 
 export default new Elysia()
