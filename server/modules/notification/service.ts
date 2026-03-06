@@ -1,7 +1,7 @@
-import type { AppEvent } from '../event/bus'
+import type { AppEvent } from '../events/bus'
 import { and, count, desc, eq } from 'drizzle-orm'
 import { db, notifications, posts, users } from 'server/db'
-import { bus } from '../event/bus'
+import { bus } from '../events/bus'
 
 bus.on('event', (event: AppEvent) => {
   if (event.topic === 'post.liked') {

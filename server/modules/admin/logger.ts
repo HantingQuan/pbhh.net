@@ -1,24 +1,24 @@
 export interface LogEntry {
   level: 'trace' | 'debug' | 'log' | 'info' | 'warn' | 'error'
   message: string
-  ts: number
+  timestamp: number
 }
 
-const MAX_LOGS = 500
+const MAX_LOGS = Number(Bun.env.MAX_LOGS) || 500
 export const logBuffer: LogEntry[] = []
 export const logListeners = new Set<(entry: LogEntry) => void>()
 
-function capture(level: LogEntry['level'], orig: (...args: unknown[]) => void) {
+function capture(level: LogEntry['level'], origin: (...args: unknown[]) => void) {
   return (...args: unknown[]) => {
-    orig(...args)
-    const message = args.map((a) => {
-      if (typeof a === 'string')
-        return a
-      if (a instanceof Error)
-        return `${a.name}: ${a.message}`
-      return JSON.stringify(a)
+    origin(...args)
+    const message = args.map((arg) => {
+      if (typeof arg === 'string')
+        return arg
+      if (arg instanceof Error)
+        return `${arg.name}: ${arg.message}`
+      return JSON.stringify(arg)
     }).join(' ')
-    const entry: LogEntry = { level, message, ts: Date.now() }
+    const entry: LogEntry = { level, message, timestamp: Date.now() }
     if (logBuffer.length >= MAX_LOGS)
       logBuffer.shift()
     logBuffer.push(entry)
@@ -27,7 +27,6 @@ function capture(level: LogEntry['level'], orig: (...args: unknown[]) => void) {
   }
 }
 
-// Auto-initialize on import
 console.trace = capture('trace', console.trace.bind(console))
 console.debug = capture('debug', console.debug.bind(console))
 console.log = capture('log', console.log.bind(console))

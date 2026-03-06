@@ -5,7 +5,7 @@ import '@server/admin/logger'
 const app = new Elysia({ prefix: '/api' })
   .use(cors())
   .use(import('@server/auth'))
-  .use(import('@server/event'))
+  .use(import('@server/events'))
   .use(import('@server/notification'))
   .use(import('@server/posts'))
   .use(import('@server/bind'))
