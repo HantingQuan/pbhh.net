@@ -110,7 +110,7 @@ async function unbind() {
         <!-- Already bound -->
         <template v-if="boundQQ">
           <p class="text-sm text-muted-foreground">
-            {{ t('bind.currentQQ') }}：<strong>{{ boundQQ }}</strong>
+            {{ t('bind.currentQQ') }}<strong>{{ boundQQ }}</strong>
           </p>
           <Button variant="outline" class="w-full" :disabled="unbinding" @click="unbind">
             <Spinner v-if="unbinding" data-icon="inline-start" />

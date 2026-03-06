@@ -39,7 +39,7 @@ async function loadParent(parentId: number) {
   if (data) {
     const p = data as PostData
     parentNickname.value = p.nickname
-    parentContent.value = p.content.slice(0, 60)
+    parentContent.value = p.content
   }
 }
 

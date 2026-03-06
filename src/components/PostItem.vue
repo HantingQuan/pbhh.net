@@ -111,11 +111,16 @@ function handleReplyClick() {
 
     <div
       v-if="parentId && parentNickname"
-      class="mt-2 px-3 py-2 border rounded-lg text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors line-clamp-2"
+      class="mt-2 px-3 py-2 border rounded-lg text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors truncate"
       @click.stop="router.push(`/post/${parentId}`)"
     >
-      <span class="font-medium text-foreground">{{ parentNickname }}</span>
-      <span v-if="parentContent">：{{ parentContent }}</span>
+      <Translation v-if="parentContent" keypath="post.quote" tag="span">
+        <template #nickname>
+          <span class="font-medium text-foreground">{{ parentNickname }}</span>
+        </template>
+        <template #content>{{ parentContent }}</template>
+      </Translation>
+      <span v-else class="font-medium text-foreground">{{ parentNickname }}</span>
     </div>
 
     <div class="mt-2">

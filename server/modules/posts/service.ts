@@ -83,7 +83,7 @@ export function list(viewerUsername?: string, filterUsername?: string) {
     if (!item.parentId)
       return item
     const parent = parentMap.get(item.parentId)
-    return { ...item, parentNickname: parent?.nickname ?? undefined, parentContent: parent?.content.slice(0, 60) }
+    return { ...item, parentNickname: parent?.nickname ?? undefined, parentContent: parent?.content }
   })
 }
 
@@ -168,7 +168,7 @@ export function listThread(rootId: number, viewerUsername?: string) {
       liked: likedIds.has(r.id),
       parentUsername: parent?.username,
       parentNickname: parentUser?.nickname ?? undefined,
-      parentContent: parent?.content.slice(0, 60),
+      parentContent: parent?.content,
     }
   })
 }

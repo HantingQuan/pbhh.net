@@ -79,6 +79,8 @@ post:
   deleteConfirm: 删除题壁
   deleteDescription: 此操作不可撤销，题壁将被永久删除。
   replyTo: 回复：{nickname}
+  quote: '{nickname}：{content}'
+  quoteNameOnly: '{nickname}'
   compose:
     placeholder: 在此留下你的题壁…
     submit: 题壁
@@ -106,7 +108,7 @@ bind:
   title: 账号绑定
   qq: QQ
   bound: 已绑定
-  currentQQ: 当前绑定 QQ
+  currentQQ: 当前绑定 QQ：
   unbind: 解绑
   unbindFailed: 解绑失败，请稍后再试
   intro: 点击下方按钮获取绑定验证码，然后将验证码发送给 QQ 机器人即可完成绑定。
