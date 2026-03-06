@@ -127,52 +127,52 @@ function handleReplyClick() {
         <span class="text-muted-foreground text-sm shrink-0">· {{ timeStr(createdAt) }}</span>
       </div>
 
-    <div class="mt-2">
-      <p v-if="title" class="font-bold text-sm mb-1">{{ title }}</p>
-      <div
-        ref="contentRef"
-        class="prose prose-sm max-w-none wrap-break-word"
-        :class="{ 'line-clamp-6': !expanded }"
-        v-html="renderedContent"
-      />
-      <span
-        v-if="overflows"
-        class="text-xs text-muted-foreground hover:underline cursor-pointer mt-0.5 inline-block"
-      >
-        {{ t('post.readMore') }}
-      </span>
-    </div>
-
-    <div class="flex items-center mt-2 -ml-2 select-none">
-      <Button
-        variant="ghost"
-        size="sm"
-        class="gap-1.5 h-8 px-2 text-sm text-muted-foreground rounded-full hover:text-sky-500 hover:bg-sky-500/10"
-        @click.stop="handleReplyClick"
-      >
-        <MessageSquare class="size-4" />
-        <span v-if="replyCount !== undefined" class="tabular-nums">{{ replyCount }}</span>
-      </Button>
-      <Button
-        variant="ghost"
-        size="sm"
-        class="gap-1.5 h-8 px-2 text-sm rounded-full transition-colors"
-        :class="localLiked
-          ? 'text-rose-500 hover:bg-rose-500/10'
-          : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10'"
-        @click.stop="handleLike"
-      >
-        <Heart class="size-4" :class="{ 'fill-current': localLiked }" />
-        <span v-if="localLikeCount" class="tabular-nums">{{ localLikeCount }}</span>
-      </Button>
-      <span v-if="isOwn" @click.stop>
-        <DeleteConfirmDialog
-          :deleting="deleting"
-          button-class="h-8 px-2 rounded-full"
-          @confirm="confirmDelete"
+      <div class="mt-2">
+        <p v-if="title" class="font-bold text-sm mb-1">{{ title }}</p>
+        <div
+          ref="contentRef"
+          class="prose prose-sm max-w-none wrap-break-word"
+          :class="{ 'line-clamp-6': !expanded }"
+          v-html="renderedContent"
         />
-      </span>
-    </div>
-  </article>
+        <span
+          v-if="overflows"
+          class="text-xs text-muted-foreground hover:underline cursor-pointer mt-0.5 inline-block"
+        >
+          {{ t('post.readMore') }}
+        </span>
+      </div>
+
+      <div class="flex items-center mt-2 -ml-2 select-none">
+        <Button
+          variant="ghost"
+          size="sm"
+          class="gap-1.5 h-8 px-2 text-sm text-muted-foreground rounded-full hover:text-sky-500 hover:bg-sky-500/10"
+          @click.stop="handleReplyClick"
+        >
+          <MessageSquare class="size-4" />
+          <span v-if="replyCount !== undefined" class="tabular-nums">{{ replyCount }}</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          class="gap-1.5 h-8 px-2 text-sm rounded-full transition-colors"
+          :class="localLiked
+            ? 'text-rose-500 hover:bg-rose-500/10'
+            : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10'"
+          @click.stop="handleLike"
+        >
+          <Heart class="size-4" :class="{ 'fill-current': localLiked }" />
+          <span v-if="localLikeCount" class="tabular-nums">{{ localLikeCount }}</span>
+        </Button>
+        <span v-if="isOwn" @click.stop>
+          <DeleteConfirmDialog
+            :deleting="deleting"
+            button-class="h-8 px-2 rounded-full"
+            @confirm="confirmDelete"
+          />
+        </span>
+      </div>
+    </article>
   </div>
 </template>
