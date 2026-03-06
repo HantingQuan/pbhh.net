@@ -142,7 +142,7 @@ function handleReplyClick() {
         @click.stop="handleReplyClick"
       >
         <MessageSquare class="size-4" />
-        <span v-if="replyCount !== undefined" class="tabular-nums">{{ replyCount || '' }}</span>
+        <span v-if="replyCount !== undefined" class="tabular-nums">{{ replyCount }}</span>
       </Button>
       <Button
         variant="ghost"

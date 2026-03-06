@@ -34,12 +34,8 @@ const content = ref('')
 const submitting = ref(false)
 const serverError = ref('')
 
-const titleError = computed(() =>
-  title.value ? validateField(composer, titleSchema, title.value, 'post.title') : undefined,
-)
-const contentError = computed(() =>
-  content.value ? validateField(composer, contentSchema, content.value, 'post.content') : undefined,
-)
+const titleError = computed(() => validateField(composer, titleSchema, title.value, 'post.title') || '')
+const contentError = computed(() => validateField(composer, contentSchema, content.value, 'post.content') || '')
 
 const textareaRef = ref<{ $el: HTMLTextAreaElement } | null>(null)
 

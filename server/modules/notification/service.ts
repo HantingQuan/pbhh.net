@@ -6,14 +6,31 @@ import { bus } from '../events/bus'
 
 bus.on('event', (event: AppEvent) => {
   if (event.topic === 'post.liked') {
-    const { postId, actorUsername, liked } = event.payload as { postId: number, actorUsername: string, liked: boolean }
+    const { postId, actorUsername, liked } = event.payload as {
+      postId: number
+      actorUsername: string
+      liked: boolean
+    }
     if (!liked)
       return
-    const post = db.select({ username: posts.username, content: posts.content }).from(posts).where(eq(posts.id, postId)).get()
+    const post = db
+      .select({ username: posts.username, content: posts.content })
+      .from(posts)
+      .where(eq(posts.id, postId))
+      .get()
     if (!post || post.username === actorUsername)
       return
-    const actor = db.select({ nickname: users.nickname }).from(users).where(eq(users.username, actorUsername)).get()
-    db.insert(notifications).values({ username: post.username, type: 'like', actorUsername, postId }).run()
+    const actor = db
+      .select({ nickname: users.nickname })
+      .from(users)
+      .where(eq(users.username, actorUsername))
+      .get()
+    db.insert(notifications).values({
+      username: post.username,
+      type: 'like',
+      actorUsername,
+      postId,
+    }).run()
     bus.publish('notify.post.liked', {
       recipientUsername: post.username,
       actorUsername,
@@ -23,13 +40,35 @@ bus.on('event', (event: AppEvent) => {
     })
   }
   else if (event.topic === 'post.replied') {
-    const { parentId, actorUsername, replyId } = event.payload as { parentId: number, actorUsername: string, replyId: number }
-    const post = db.select({ username: posts.username, content: posts.content }).from(posts).where(eq(posts.id, parentId)).get()
+    const { parentId, actorUsername, replyId } = event.payload as {
+      parentId: number
+      actorUsername: string
+      replyId: number
+    }
+    const post = db
+      .select({ username: posts.username, content: posts.content })
+      .from(posts)
+      .where(eq(posts.id, parentId))
+      .get()
     if (!post || post.username === actorUsername)
       return
-    const actor = db.select({ nickname: users.nickname }).from(users).where(eq(users.username, actorUsername)).get()
-    const reply = db.select({ content: posts.content }).from(posts).where(eq(posts.id, replyId)).get()
-    db.insert(notifications).values({ username: post.username, type: 'reply', actorUsername, postId: parentId, replyId }).run()
+    const actor = db
+      .select({ nickname: users.nickname })
+      .from(users)
+      .where(eq(users.username, actorUsername))
+      .get()
+    const reply = db
+      .select({ content: posts.content })
+      .from(posts)
+      .where(eq(posts.id, replyId))
+      .get()
+    db.insert(notifications).values({
+      username: post.username,
+      type: 'reply',
+      actorUsername,
+      postId: parentId,
+      replyId,
+    }).run()
     bus.publish('notify.post.replied', {
       recipientUsername: post.username,
       actorUsername,
@@ -67,34 +106,34 @@ export function list(username: string) {
     .orderBy(desc(notifications.createdAt))
     .all()
 
-  return rows.map(r => ({
-    id: r.id,
-    type: r.type as 'like' | 'reply',
-    actorUsername: r.actorUsername,
-    actorNickname: r.actorNickname ?? '',
-    actorAvatar: r.actorAvatar ?? '',
-    postId: r.postId,
-    postContent: r.postContent ?? '',
-    replyId: r.replyId ?? undefined,
-    replyContent: r.replyContent ?? undefined,
-    read: r.read,
-    createdAt: r.createdAt!.getTime(),
+  return rows.map(row => ({
+    ...row,
+    createdAt: row.createdAt.getTime(),
   }))
 }
 
 export function markRead(id: number, username: string) {
-  db.update(notifications).set({ read: true }).where(and(eq(notifications.id, id), eq(notifications.username, username))).run()
+  db.update(notifications).set({ read: true }).where(and(
+    eq(notifications.id, id),
+    eq(notifications.username, username),
+  )).run()
 }
 
 export function markAllRead(username: string) {
-  db.update(notifications).set({ read: true }).where(and(eq(notifications.username, username), eq(notifications.read, false))).run()
+  db.update(notifications).set({ read: true }).where(and(
+    eq(notifications.username, username),
+    eq(notifications.read, false),
+  )).run()
 }
 
 export function unreadCount(username: string): number {
   const result = db
     .select({ count: count() })
     .from(notifications)
-    .where(and(eq(notifications.username, username), eq(notifications.read, false)))
+    .where(and(
+      eq(notifications.username, username),
+      eq(notifications.read, false),
+    ))
     .get()
   return result?.count ?? 0
 }
