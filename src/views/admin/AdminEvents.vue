@@ -8,7 +8,7 @@ const props = defineProps<{
   autoScroll: boolean
 }>()
 
-const { t } = useI18n()
+const { d } = useI18n()
 
 export interface EventEntry { topic: string, payload: unknown, timestamp: number }
 
@@ -27,7 +27,7 @@ watch(() => props.entries.length, () => {
       :key="index"
       class="flex gap-2 leading-5"
     >
-      <span class="text-muted-foreground shrink-0">{{ t('time', entry.timestamp) }}</span>
+      <span class="text-muted-foreground shrink-0">{{ d(entry.timestamp, 'long') }}</span>
       <span class="shrink-0 text-blue-500 font-semibold">{{ entry.topic }}</span>
       <span class="break-all whitespace-pre-wrap text-muted-foreground">{{ JSON.stringify(entry.payload) }}</span>
     </div>

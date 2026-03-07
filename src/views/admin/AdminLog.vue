@@ -9,7 +9,7 @@ const props = defineProps<{
   emptyText: string
 }>()
 
-const { t } = useI18n()
+const { d } = useI18n()
 
 export interface LogEntry { level: string, message: string, timestamp: number }
 
@@ -41,7 +41,7 @@ watch(() => props.logs.length, () => {
       :key="i"
       class="flex gap-2 leading-5"
     >
-      <span class="text-muted-foreground shrink-0">{{ t('time', entry.timestamp) }}</span>
+      <span class="text-muted-foreground shrink-0">{{ d(entry.timestamp, 'long') }}</span>
       <span class="shrink-0 w-8 uppercase font-semibold" :class="levelClass(entry.level)">{{ entry.level }}</span>
       <span class="break-all whitespace-pre-wrap" :class="levelClass(entry.level)">{{ entry.message }}</span>
     </div>
