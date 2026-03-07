@@ -1,5 +1,5 @@
 import type { AppEvent, AppEventMap } from '../events/bus'
-import { and, count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { db, notifications, posts, userBindings, users } from 'server/db'
 import { bus } from '../events/bus'
@@ -29,8 +29,14 @@ function getBindings(username: string): Record<string, string> {
 }
 
 function onPostLiked({ postId, actorUsername, liked }: AppEventMap['post.liked']) {
-  if (!liked)
+  if (!liked) {
+    db.delete(notifications).where(and(
+      eq(notifications.type, 'like'),
+      eq(notifications.actorUsername, actorUsername),
+      eq(notifications.postId, postId),
+    )).run()
     return
+  }
   const post = db
     .select({ username: posts.username, content: posts.content })
     .from(posts)
@@ -186,4 +192,13 @@ export function unreadCount(username: string): number {
     ))
     .get()
   return result?.count ?? 0
+}
+
+export function removeForDeletedPosts(deletedIds: number[]) {
+  if (!deletedIds.length)
+    return
+  db.delete(notifications).where(and(
+    eq(notifications.type, 'reply'),
+    inArray(notifications.replyId, deletedIds),
+  )).run()
 }

@@ -1,6 +1,7 @@
 import type { SQL } from 'drizzle-orm'
 import { and, asc, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { db, postLikes, posts, users } from 'server/db'
+import { removeForDeletedPosts } from '../notification/service'
 
 function query(where?: SQL, order: 'asc' | 'desc' = 'desc') {
   return db
@@ -254,6 +255,7 @@ export function remove(id: number, username: string): 'ok' | 'not_found' | 'forb
   `).map(r => r.id)
 
   db.update(posts).set({ deleted: true }).where(inArray(posts.id, descendantIds)).run()
+  removeForDeletedPosts(descendantIds)
   return 'ok'
 }
 
