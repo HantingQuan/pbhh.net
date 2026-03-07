@@ -112,7 +112,7 @@ defineExpose({ focus })
         v-model="title"
         :placeholder="t('field.post.title.placeholder')"
         :maxlength="titleMaxLength"
-        class="border-none px-0 shadow-none focus-visible:ring-0 font-bold text-base"
+        class="border-none px-0 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 font-bold text-base bg-transparent"
       />
 
       <Textarea
@@ -120,7 +120,7 @@ defineExpose({ focus })
         v-model="content"
         :placeholder="placeholder ?? (parentId ? t('post.reply.placeholder') : t('post.compose.placeholder'))"
         :maxlength="maxLength"
-        class="border-none px-0 resize-none shadow-none focus-visible:ring-0 text-base mt-1 overflow-hidden"
+        class="border-none px-0 resize-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 text-base mt-1 overflow-hidden bg-transparent"
         style="min-height: 4.5rem"
         @keydown="handleKeydown"
       />

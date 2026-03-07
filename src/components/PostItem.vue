@@ -93,7 +93,7 @@ function handleReplyClick() {
   <div>
     <div
       v-if="parentId && parentNickname"
-      class="px-3 py-2 border rounded-lg text-sm text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors truncate"
+      class="px-3 py-2 border rounded-lg text-sm text-muted-foreground cursor-pointer bg-muted/30 hover:bg-muted/50 transition-colors truncate"
       @click.stop="emit('quoteClick', parentId!)"
     >
       <Translation v-if="parentContent" keypath="post.quote" tag="span">
