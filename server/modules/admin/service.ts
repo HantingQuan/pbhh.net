@@ -1,69 +1,70 @@
-import { and, desc, eq } from 'drizzle-orm'
-import { db, notifications, postLikes, posts, userBindings, userCapabilities, users } from 'server/db'
+import { and, eq, getTableColumns, is } from 'drizzle-orm'
+import { getTableConfig, SQLiteTable } from 'drizzle-orm/sqlite-core'
+import { db } from 'server/db'
+import * as schema from 'server/schema'
 
-const TABLES = {
-  users: () => db.select().from(users).orderBy(desc(users.createdAt)).limit(200).all(),
-  posts: () => db.select().from(posts).orderBy(desc(posts.createdAt)).limit(200).all(),
-  user_capabilities: () => db.select().from(userCapabilities).all(),
-  user_bindings: () => db.select().from(userBindings).all(),
-  post_likes: () => db.select().from(postLikes).all(),
-  notifications: () => db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(200).all(),
-} as const
+type Tables = { [K in keyof typeof schema as typeof schema[K] extends SQLiteTable ? K : never]: typeof schema[K] & SQLiteTable }
 
-export const tableNames = Object.keys(TABLES)
+const TABLE_MAP = Object.fromEntries(
+  Object.entries(schema).filter(([, v]) => is(v, SQLiteTable)),
+) as Tables
+
+type TableName = keyof Tables
+
+export const tableNames: string[] = Object.keys(TABLE_MAP)
+
+function isTableName(name: string): name is TableName {
+  return name in TABLE_MAP
+}
+
+function derivePKs(drizzleTable: SQLiteTable): string[] {
+  const config = getTableConfig(drizzleTable)
+  const cols = getTableColumns(drizzleTable) as Record<string, any>
+  const sqlToJs = new Map(Object.entries(cols).map(([jsName, col]) => [col.name, jsName]))
+  if (config.primaryKeys.length > 0)
+    return config.primaryKeys.flatMap(pk => pk.columns.map((col: any) => sqlToJs.get(col.name) ?? col.name))
+  return Object.entries(cols).filter(([, col]) => col.primary).map(([jsName]) => jsName)
+}
+
+const TABLE_PK: Record<TableName, string[]> = Object.fromEntries(
+  Object.entries(TABLE_MAP).map(([name, table]) => [name, derivePKs(table as SQLiteTable)]),
+) as Record<TableName, string[]>
+
+type Row = Record<string, unknown>
+
+function buildWhere(name: TableName, pk: Row) {
+  const t = TABLE_MAP[name] as any
+  const conditions = TABLE_PK[name].map(col => eq(t[col], pk[col]))
+  return conditions.length === 1 ? conditions[0]! : and(...conditions)
+}
 
 export function queryTable(name: string) {
-  const fn = TABLES[name as keyof typeof TABLES]
-  if (!fn)
+  if (!isTableName(name))
     return null
-  return { rows: fn() }
+  return { rows: db.select().from(TABLE_MAP[name]).all(), pks: TABLE_PK[name] }
 }
 
-type PK = Record<string, unknown>
-
-export function deleteTableRow(table: string, pk: PK): boolean {
-  switch (table) {
-    case 'posts': {
-      const id = Number(pk.id)
-      if (!Number.isInteger(id) || id <= 0)
-        return false
-      db.delete(posts).where(eq(posts.id, id)).run()
-      return true
-    }
-    case 'notifications': {
-      const id = Number(pk.id)
-      if (!Number.isInteger(id) || id <= 0)
-        return false
-      db.delete(notifications).where(eq(notifications.id, id)).run()
-      return true
-    }
-    case 'user_capabilities': {
-      const { username, capability } = pk
-      if (typeof username !== 'string' || typeof capability !== 'string')
-        return false
-      db.delete(userCapabilities).where(and(eq(userCapabilities.username, username), eq(userCapabilities.capability, capability))).run()
-      return true
-    }
-    case 'post_likes': {
-      const postId = Number(pk.postId)
-      const { username } = pk
-      if (!Number.isInteger(postId) || typeof username !== 'string')
-        return false
-      db.delete(postLikes).where(and(eq(postLikes.postId, postId), eq(postLikes.username, username))).run()
-      return true
-    }
-    case 'user_bindings': {
-      const { username, platform } = pk
-      if (typeof username !== 'string' || typeof platform !== 'string')
-        return false
-      db.delete(userBindings).where(and(eq(userBindings.username, username), eq(userBindings.platform, platform))).run()
-      return true
-    }
-    default:
-      return false
-  }
+export function deleteTableRow(table: string, pk: Row): boolean {
+  if (!isTableName(table))
+    return false
+  db.delete(TABLE_MAP[table]).where(buildWhere(table, pk)).run()
+  return true
 }
 
-export function grantCapability(username: string, capability: string) {
-  db.insert(userCapabilities).values({ username, capability }).onConflictDoNothing().run()
+export function updateTableRow(table: string, pk: Row, values: Row): boolean {
+  if (!isTableName(table))
+    return false
+  const pkCols = TABLE_PK[table]
+  const setValues = Object.fromEntries(Object.entries(values).filter(([k]) => !pkCols.includes(k)))
+  if (!Object.keys(setValues).length)
+    return false
+  db.update(TABLE_MAP[table]).set(setValues).where(buildWhere(table, pk)).run()
+  return true
+}
+
+export function insertTableRow(table: string, values: Row): boolean {
+  if (!isTableName(table))
+    return false
+  db.insert(TABLE_MAP[table]).values(values).run()
+  return true
 }

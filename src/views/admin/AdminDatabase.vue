@@ -3,16 +3,29 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 
+type Row = Record<string, unknown>
+
 const tables = ref<string[]>([])
 const selectedTable = ref('')
-const tableRows = ref<Record<string, unknown>[]>([])
-const tableColumns = computed(() => tableRows.value[0] ? Object.keys(tableRows.value[0]) : [])
+const tableRows = ref<Row[]>([])
+const tablePks = ref<string[]>([])
 const loadingTable = ref(false)
 
-const authHeaders = computed(() => {
-  const token = localStorage.getItem('token') ?? ''
-  return { Authorization: `Bearer ${token}` }
-})
+const editingIndex = ref<number | null>(null)
+const editDraft = ref<Row>({})
+const insertDraft = ref<Row | null>(null)
+
+const tableColumns = computed(() =>
+  tableRows.value[0]
+    ? Object.keys(tableRows.value[0])
+    : insertDraft.value
+      ? Object.keys(insertDraft.value)
+      : [],
+)
+
+const authHeaders = computed(() => ({
+  Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
+}))
 
 async function loadTables() {
   const res = await fetch('/api/admin/tables', { headers: authHeaders.value })
@@ -26,42 +39,93 @@ async function loadTables() {
 async function loadTable() {
   if (!selectedTable.value)
     return
+  editingIndex.value = null
+  insertDraft.value = null
   loadingTable.value = true
   const res = await fetch(`/api/admin/db/${selectedTable.value}`, { headers: authHeaders.value })
   if (res.ok) {
     const data = await res.json()
     tableRows.value = data.rows
+    tablePks.value = data.pks ?? []
   }
   loadingTable.value = false
 }
 
 watch(selectedTable, loadTable)
 
-const TABLE_PK: Record<string, string[]> = {
-  posts: ['id'],
-  notifications: ['id'],
-  user_capabilities: ['username', 'capability'],
-  post_likes: ['postId', 'username'],
-  user_bindings: ['username', 'platform'],
-}
-
-const canDelete = computed(() => selectedTable.value in TABLE_PK)
-
-async function deleteRow(row: Record<string, unknown>) {
-  const pkCols = TABLE_PK[selectedTable.value]
-  if (!pkCols)
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function deleteRow(row: Row) {
+  if (!tablePks.value.length)
     return
-  const pk: Record<string, unknown> = {}
-  for (const col of pkCols) pk[col] = row[col]
+  if (!window.confirm('确认删除这条记录？'))
+    return
+  const pk: Row = {}
+  for (const col of tablePks.value) pk[col] = row[col]
   const res = await fetch(`/api/admin/db/${selectedTable.value}`, {
     method: 'DELETE',
     headers: { ...authHeaders.value, 'Content-Type': 'application/json' },
     body: JSON.stringify(pk),
   })
   if (res.ok)
-    tableRows.value = tableRows.value.filter(r => !pkCols.every(col => r[col] === row[col]))
+    tableRows.value = tableRows.value.filter(r => !tablePks.value.every(col => r[col] === row[col]))
 }
 
+// ── Edit ──────────────────────────────────────────────────────────────────────
+function startEdit(index: number) {
+  editingIndex.value = index
+  editDraft.value = { ...tableRows.value[index] }
+  insertDraft.value = null
+}
+
+function cancelEdit() {
+  editingIndex.value = null
+}
+
+async function saveEdit(row: Row) {
+  const pk: Row = {}
+  for (const col of tablePks.value) pk[col] = row[col]
+  const values: Row = {}
+  for (const col of tableColumns.value) {
+    if (!tablePks.value.includes(col))
+      values[col] = editDraft.value[col]
+  }
+  const res = await fetch(`/api/admin/db/${selectedTable.value}`, {
+    method: 'PATCH',
+    headers: { ...authHeaders.value, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ pk, values }),
+  })
+  if (res.ok) {
+    tableRows.value[editingIndex.value!] = { ...row, ...values }
+    editingIndex.value = null
+  }
+}
+
+// ── Insert ────────────────────────────────────────────────────────────────────
+function startInsert() {
+  const template: Row = {}
+  const cols = tableRows.value[0] ? Object.keys(tableRows.value[0]) : tablePks.value
+  for (const col of cols) template[col] = ''
+  insertDraft.value = template
+  editingIndex.value = null
+}
+
+function cancelInsert() {
+  insertDraft.value = null
+}
+
+async function saveInsert() {
+  const res = await fetch(`/api/admin/db/${selectedTable.value}`, {
+    method: 'POST',
+    headers: { ...authHeaders.value, 'Content-Type': 'application/json' },
+    body: JSON.stringify(insertDraft.value),
+  })
+  if (res.ok) {
+    insertDraft.value = null
+    await loadTable()
+  }
+}
+
+// ── user_capabilities grant ────────────────────────────────────────────────────
 const grantUser = ref('')
 const grantCap = ref('')
 
@@ -83,8 +147,6 @@ async function submitGrant() {
 function cellValue(v: unknown) {
   if (v === null || v === undefined)
     return '—'
-  if (v instanceof Date)
-    return v.toLocaleString('zh-CN')
   if (typeof v === 'object')
     return JSON.stringify(v)
   return String(v)
@@ -96,10 +158,7 @@ onMounted(loadTables)
 <template>
   <div class="flex-1 flex flex-col overflow-hidden">
     <div class="flex items-center gap-2 px-4 py-2 border-b shrink-0 flex-wrap">
-      <select
-        v-model="selectedTable"
-        class="text-sm border rounded px-2 py-1 bg-background"
-      >
+      <select v-model="selectedTable" class="text-sm border rounded px-2 py-1 bg-background">
         <option v-for="t in tables" :key="t" :value="t">
           {{ t }}
         </option>
@@ -107,6 +166,9 @@ onMounted(loadTables)
       <Button size="sm" variant="outline" :disabled="loadingTable" @click="loadTable">
         <Spinner v-if="loadingTable" data-icon="inline-start" />
         刷新
+      </Button>
+      <Button size="sm" variant="outline" @click="startInsert">
+        + 新增
       </Button>
       <span class="text-xs text-muted-foreground">{{ tableRows.length }} 条</span>
       <template v-if="selectedTable === 'user_capabilities'">
@@ -118,6 +180,7 @@ onMounted(loadTables)
         </Button>
       </template>
     </div>
+
     <div class="flex-1 overflow-auto">
       <table class="text-xs w-full border-collapse">
         <thead class="sticky top-0 bg-background shadow-[0_1px_0_0_var(--border)]">
@@ -125,36 +188,82 @@ onMounted(loadTables)
             <th
               v-for="col in tableColumns"
               :key="col"
-              class="text-left px-3 py-2 font-medium text-muted-foreground border-r whitespace-nowrap"
+              class="text-left px-3 py-2 font-medium border-r whitespace-nowrap"
+              :class="tablePks.includes(col) ? 'text-primary' : 'text-muted-foreground'"
             >
               {{ col }}
             </th>
-            <th v-if="canDelete" class="px-3 py-2" />
+            <th class="px-3 py-2 text-muted-foreground">
+              操作
+            </th>
           </tr>
         </thead>
         <tbody>
+          <!-- Insert row -->
+          <tr v-if="insertDraft" class="border-b bg-muted/30">
+            <td v-for="col in tableColumns" :key="col" class="px-2 py-1 border-r">
+              <input
+                v-model="insertDraft[col] as string"
+                class="w-full bg-transparent border border-input rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-ring"
+              >
+            </td>
+            <td class="px-3 py-1 flex gap-2 items-center">
+              <button class="text-xs text-green-600 hover:text-green-800 font-medium" @click="saveInsert">
+                保存
+              </button>
+              <button class="text-xs text-muted-foreground hover:text-foreground" @click="cancelInsert">
+                取消
+              </button>
+            </td>
+          </tr>
+
+          <!-- Data rows -->
           <tr
             v-for="(row, i) in tableRows"
             :key="i"
             class="border-b hover:bg-muted/50"
+            :class="{ 'bg-muted/20': editingIndex === i }"
           >
-            <td
-              v-for="col in tableColumns"
-              :key="col"
-              class="px-3 py-1.5 border-r max-w-60 truncate"
-              :title="String(row[col] ?? '')"
-            >
-              {{ cellValue(row[col]) }}
-            </td>
-            <td v-if="canDelete" class="px-3 py-1.5">
-              <button class="text-xs text-red-500 hover:text-red-700" @click="deleteRow(row)">
-                删除
-              </button>
-            </td>
+            <template v-if="editingIndex === i">
+              <td v-for="col in tableColumns" :key="col" class="px-2 py-1 border-r">
+                <input
+                  v-if="!tablePks.includes(col)"
+                  v-model="editDraft[col] as string"
+                  class="w-full bg-transparent border border-input rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-ring"
+                >
+                <span v-else class="px-1 text-muted-foreground">{{ cellValue(row[col]) }}</span>
+              </td>
+              <td class="px-3 py-1 flex gap-2 items-center">
+                <button class="text-xs text-green-600 hover:text-green-800 font-medium" @click="saveEdit(row)">
+                  保存
+                </button>
+                <button class="text-xs text-muted-foreground hover:text-foreground" @click="cancelEdit">
+                  取消
+                </button>
+              </td>
+            </template>
+            <template v-else>
+              <td
+                v-for="col in tableColumns"
+                :key="col"
+                class="px-3 py-1.5 border-r max-w-60 truncate"
+                :title="String(row[col] ?? '')"
+              >
+                {{ cellValue(row[col]) }}
+              </td>
+              <td class="px-3 py-1.5 flex gap-3 items-center">
+                <button class="text-xs text-blue-500 hover:text-blue-700" @click="startEdit(i)">
+                  编辑
+                </button>
+                <button v-if="tablePks.length" class="text-xs text-red-500 hover:text-red-700" @click="deleteRow(row)">
+                  删除
+                </button>
+              </td>
+            </template>
           </tr>
         </tbody>
       </table>
-      <div v-if="tableRows.length === 0 && !loadingTable" class="text-muted-foreground py-8 text-center text-sm">
+      <div v-if="tableRows.length === 0 && !loadingTable && !insertDraft" class="text-muted-foreground py-8 text-center text-sm">
         暂无数据
       </div>
     </div>

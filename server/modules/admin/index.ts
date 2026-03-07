@@ -5,7 +5,7 @@ import { Elysia, t } from 'elysia'
 import { bus } from '../events/bus'
 import { adminAuth } from './guard'
 import { logBuffer, logListeners } from './logger'
-import { deleteTableRow, grantCapability, queryTable, tableNames } from './service'
+import { deleteTableRow, insertTableRow, queryTable, tableNames, updateTableRow } from './service'
 
 const wsHandlers = new Map<ElysiaWS, {
   logFn: (entry: LogEntry) => void
@@ -29,10 +29,18 @@ export default new Elysia({ prefix: '/admin' })
       return status(400, { message: 'error.badRequest' })
     return { ok: true }
   }, { body: t.Record(t.String(), t.Unknown()) })
-  .post('/db/user_capabilities', ({ body }) => {
-    grantCapability(body.username, body.capability)
+  .patch('/db/:table', ({ params, body, status }) => {
+    const ok = updateTableRow(params.table, body.pk as Record<string, unknown>, body.values as Record<string, unknown>)
+    if (!ok)
+      return status(400, { message: 'error.badRequest' })
     return { ok: true }
-  }, { body: t.Object({ username: t.String(), capability: t.String() }) })
+  }, { body: t.Object({ pk: t.Record(t.String(), t.Unknown()), values: t.Record(t.String(), t.Unknown()) }) })
+  .post('/db/:table', ({ params, body, status }) => {
+    const ok = insertTableRow(params.table, body as Record<string, unknown>)
+    if (!ok)
+      return status(400, { message: 'error.badRequest' })
+    return { ok: true }
+  }, { body: t.Record(t.String(), t.Unknown()) })
   .ws('/ws', {
     query: t.Object({ token: t.String() }),
     open(ws) {

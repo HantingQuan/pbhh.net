@@ -16,12 +16,17 @@ onMounted(() => {
 })
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
-type Tab = 'backend' | 'frontend' | 'events' | 'database'
-const TABS: Tab[] = ['backend', 'frontend', 'events', 'database']
+type Tab = keyof typeof TABS
+const TABS = {
+  backend: '服务端日志',
+  frontend: '前端日志',
+  events: '事件',
+  database: '数据库',
+}
 
 function getTabFromHash(): Tab {
   const hash = location.hash.slice(1) as Tab
-  return TABS.includes(hash) ? hash : 'backend'
+  return Object.keys(TABS).includes(hash) ? hash : 'backend'
 }
 
 const tab = ref<Tab>(getTabFromHash())
@@ -126,7 +131,7 @@ onUnmounted(() => {
       <span class="font-bold">Admin</span>
       <div class="flex gap-1">
         <Button
-          v-for="(label, key) in { backend: '服务端日志', frontend: '前端日志', events: '事件', database: '数据库' }"
+          v-for="(label, key) in TABS"
           :key="key"
           :variant="tab === key ? 'default' : 'ghost'"
           size="sm"
