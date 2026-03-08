@@ -126,6 +126,7 @@ time:
 inbox:
   title: 收件箱
   empty: 暂无通知
+  read: 已读
   like: 赞了你的题壁
   likeActorsSep: '、'
   likeActors: ' 等 {count} 人'
