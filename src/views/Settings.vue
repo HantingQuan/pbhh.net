@@ -58,7 +58,14 @@ function setTab(tab: Tab) {
         <SettingsProfile v-if="activeTab === 'profile'" />
         <SettingsTheme v-else-if="activeTab === 'theme'" />
         <SettingsBind v-else-if="activeTab === 'bind'" />
-        <SettingsNotifications v-else-if="activeTab === 'notifications'" />
+        <Suspense v-else-if="activeTab === 'notifications'">
+          <SettingsNotifications />
+          <template #fallback>
+            <div class="flex justify-center py-8">
+              <div class="size-6 animate-spin rounded-full border-2 border-muted border-t-foreground" />
+            </div>
+          </template>
+        </Suspense>
       </div>
     </div>
   </div>
