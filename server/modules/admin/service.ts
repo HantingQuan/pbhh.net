@@ -32,6 +32,14 @@ const TABLE_PK: Record<TableName, string[]> = Object.fromEntries(
 
 type Row = Record<string, unknown>
 
+const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
+
+function coerceRow(row: Row): Row {
+  return Object.fromEntries(
+    Object.entries(row).map(([k, v]) => [k, typeof v === 'string' && ISO_RE.test(v) ? new Date(v) : v]),
+  )
+}
+
 function buildWhere(name: TableName, pk: Row) {
   const t = TABLE_MAP[name] as any
   const conditions = TABLE_PK[name].map(col => eq(t[col], pk[col]))
@@ -55,7 +63,7 @@ export function updateTableRow(table: string, pk: Row, values: Row): boolean {
   if (!isTableName(table))
     return false
   const pkCols = TABLE_PK[table]
-  const setValues = Object.fromEntries(Object.entries(values).filter(([k]) => !pkCols.includes(k)))
+  const setValues = coerceRow(Object.fromEntries(Object.entries(values).filter(([k]) => !pkCols.includes(k))))
   if (!Object.keys(setValues).length)
     return false
   db.update(TABLE_MAP[table]).set(setValues).where(buildWhere(table, pk)).run()
@@ -65,6 +73,6 @@ export function updateTableRow(table: string, pk: Row, values: Row): boolean {
 export function insertTableRow(table: string, values: Row): boolean {
   if (!isTableName(table))
     return false
-  db.insert(TABLE_MAP[table]).values(values).run()
+  db.insert(TABLE_MAP[table]).values(coerceRow(values)).run()
   return true
 }

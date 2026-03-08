@@ -129,23 +129,15 @@ async function saveInsert() {
   }
 }
 
-// ── user_capabilities grant ────────────────────────────────────────────────────
-const grantUser = ref('')
-const grantCap = ref('')
+type ColType = 'boolean' | 'number' | 'text'
 
-async function submitGrant() {
-  if (!grantUser.value || !grantCap.value)
-    return
-  const res = await fetch('/api/admin/db/user_capabilities', {
-    method: 'POST',
-    headers: { ...authHeaders.value, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: grantUser.value, capability: grantCap.value }),
-  })
-  if (res.ok) {
-    await loadTable()
-    grantUser.value = ''
-    grantCap.value = ''
-  }
+function colType(col: string): ColType {
+  const sample = tableRows.value[0]?.[col]
+  if (typeof sample === 'boolean')
+    return 'boolean'
+  if (typeof sample === 'number')
+    return 'number'
+  return 'text'
 }
 
 function cellValue(v: unknown) {
@@ -188,14 +180,6 @@ onMounted(loadTables)
         + 新增
       </Button>
       <span class="text-xs text-muted-foreground">{{ tableRows.length }} 条</span>
-      <template v-if="selectedTable === 'user_capabilities'">
-        <div class="h-4 border-l" />
-        <input v-model="grantUser" placeholder="用户名" class="text-xs border rounded px-2 py-1 bg-background w-24">
-        <input v-model="grantCap" placeholder="权限" class="text-xs border rounded px-2 py-1 bg-background w-32">
-        <Button size="sm" variant="outline" :disabled="!grantUser || !grantCap" @click="submitGrant">
-          授权
-        </Button>
-      </template>
     </div>
 
     <ScrollArea class="flex-1">
@@ -220,11 +204,19 @@ onMounted(loadTables)
           <tr v-if="insertDraft" class="border-b bg-muted/30">
             <td v-for="col in tableColumns" :key="col" class="px-2 py-1 border-r">
               <input
+                v-if="colType(col) === 'boolean'"
+                v-model="insertDraft[col] as boolean"
+                type="checkbox"
+                class="cursor-pointer block mx-auto"
+              >
+              <input
+                v-else
                 v-model="insertDraft[col] as string"
+                :type="colType(col) === 'number' ? 'number' : 'text'"
                 class="w-full bg-transparent border border-input rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-ring"
               >
             </td>
-            <td class="px-3 py-1 flex gap-2 items-center">
+            <td class="px-3 py-1.5 flex gap-3 items-center">
               <button class="text-xs text-green-600 hover:text-green-800 font-medium" @click="saveInsert">
                 保存
               </button>
@@ -243,14 +235,23 @@ onMounted(loadTables)
           >
             <template v-if="editingIndex === i">
               <td v-for="col in tableColumns" :key="col" class="px-2 py-1 border-r">
-                <input
-                  v-if="!tablePks.includes(col)"
-                  v-model="editDraft[col] as string"
-                  class="w-full bg-transparent border border-input rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-ring"
-                >
+                <template v-if="!tablePks.includes(col)">
+                  <input
+                    v-if="colType(col) === 'boolean'"
+                    v-model="editDraft[col] as boolean"
+                    type="checkbox"
+                    class="cursor-pointer block mx-auto"
+                  >
+                  <input
+                    v-else
+                    v-model="editDraft[col] as string"
+                    :type="colType(col) === 'number' ? 'number' : 'text'"
+                    class="w-full bg-transparent border border-input rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-ring"
+                  >
+                </template>
                 <span v-else class="px-1 text-muted-foreground">{{ cellValue(row[col]) }}</span>
               </td>
-              <td class="px-3 py-1 flex gap-2 items-center">
+              <td class="px-3 py-1.5 flex gap-3 items-center">
                 <button class="text-xs text-green-600 hover:text-green-800 font-medium" @click="saveEdit(row)">
                   保存
                 </button>

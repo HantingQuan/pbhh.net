@@ -50,7 +50,7 @@ function logout() {
       <DropdownMenuItem v-if="user?.capabilities.includes('admin')" as-child>
         <RouterLink to="/admin" class="flex items-center gap-2 cursor-pointer">
           <ShieldCheck class="size-4" />
-          Admin
+          管理后台
         </RouterLink>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
