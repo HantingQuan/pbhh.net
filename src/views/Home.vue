@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { Translation, useI18n } from 'vue-i18n'
 import { Separator } from '@/components/ui/separator'
 import useHitokoto from '@/composables/useHitokoto'
@@ -39,9 +38,9 @@ const { hitokoto } = useHitokoto()
         </a>
       </template>
     </Translation>
-    <div v-if="hitokoto" class="text-muted-foreground italic text-sm flex flex-col">
+    <div v-if="hitokoto" class="text-muted-foreground italic text-sm flex flex-col w-fit mx-auto">
       <span class="pr-[2em] text-start whitespace-pre-wrap">{{ hitokoto.content }}</span>
-      <span class="pl-[2em] self-end">{{ hitokoto.from }}</span>
+      <span class="pl-[2em] self-end">——{{ hitokoto.from }}</span>
     </div>
   </div>
 </template>

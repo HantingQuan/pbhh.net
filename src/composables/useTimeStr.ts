@@ -28,6 +28,6 @@ export default function useTimeStr() {
       return t('time.minutesAgo', { n: Math.floor(diff / 60_000) })
     if (diff < 86_400_000)
       return t('time.hoursAgo', { n: Math.floor(diff / 3_600_000) })
-    return d(createdAt, 'long').replace('/', '-')
+    return d(createdAt, 'short').replace(/\//g, '-')
   }
 }

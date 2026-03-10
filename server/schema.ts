@@ -4,7 +4,7 @@ export type NotificationType = 'like' | 'reply' | 'post'
 export const NOTIFICATION_TYPES: NotificationType[] = ['like', 'reply', 'post']
 
 export const users = sqliteTable('users', {
-  username: text('username').notNull().unique().primaryKey(),
+  username: text('username').notNull().primaryKey(),
   nickname: text('nickname').notNull(),
   password: text('password').notNull(),
   avatar: text('avatar').notNull().default(''),
