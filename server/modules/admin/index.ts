@@ -4,7 +4,7 @@ import type { LogEntry } from './logger'
 import { Elysia, t } from 'elysia'
 import { bus } from '../events/bus'
 import { adminAuth } from './guard'
-import { logBuffer, logListeners } from './logger'
+import { getLogDates, logBuffer, logListeners, readLogsByDate } from './logger'
 import { deleteTableRow, insertTableRow, queryTable, tableNames, updateTableRow } from './service'
 
 const wsHandlers = new Map<ElysiaWS, {
@@ -16,6 +16,12 @@ const wsHandlers = new Map<ElysiaWS, {
 export default new Elysia({ prefix: '/admin' })
   .use(adminAuth)
   .get('/logs', () => logBuffer)
+  .get('/log-dates', () => getLogDates())
+  .get('/logs/:date', ({ params, status }) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(params.date))
+      return status(400, { message: 'error.badRequest' })
+    return readLogsByDate(params.date)
+  })
   .get('/tables', () => tableNames)
   .get('/db/:table', ({ params, status }) => {
     const data = queryTable(params.table)

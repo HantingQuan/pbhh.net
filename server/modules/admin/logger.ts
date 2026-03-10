@@ -1,4 +1,4 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { bus } from '@server/events/bus'
 
@@ -61,6 +61,28 @@ console.log = capture('log', console.log.bind(console))
 console.info = capture('info', console.info.bind(console))
 console.warn = capture('warn', console.warn.bind(console))
 console.error = capture('error', console.error.bind(console))
+
+export function getLogDates(): string[] {
+  if (!existsSync(dataDir))
+    return []
+  return readdirSync(dataDir)
+    .filter(f => /^server-\d{4}-\d{2}-\d{2}\.log$/.test(f))
+    .map(f => f.slice(7, 17))
+    .sort()
+    .reverse()
+}
+
+export function readLogsByDate(date: string): LogEntry[] {
+  const file = resolve(dataDir, `server-${date}.log`)
+  if (!existsSync(file))
+    return []
+  try {
+    return readFileSync(file, 'utf-8').split('\n').filter(Boolean).map(l => JSON.parse(l))
+  }
+  catch {
+    return []
+  }
+}
 
 bus.on('event', (event: { topic: string, payload: unknown }) => {
   console.info(`[event] ${event.topic}`, event.payload)

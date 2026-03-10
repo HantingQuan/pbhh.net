@@ -23,7 +23,7 @@ const activeTab = ref<Tab>(getTabFromHash())
 
 function setTab(tab: Tab) {
   activeTab.value = tab
-  history.replaceState(null, '', `#${tab}`)
+  history.replaceState(history.state, '', `#${tab}`)
 }
 </script>
 
