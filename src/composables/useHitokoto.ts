@@ -1,21 +1,17 @@
+import { useStorage } from '@vueuse/core'
 import { ref } from 'vue'
+import { api } from '@/lib/api'
 
-interface Hitokoto {
-  content: string
-  fromWho: string | null
-  from: string
-}
+export const hitokotoProvider = useStorage('hitokoto-provider', 'a')
 
 export default function useHitokoto() {
-  const hitokoto = ref<Hitokoto>()
+  const hitokoto = ref<Awaited<ReturnType<typeof api.hitokoto.get>>['data']>()
 
   async function refresh() {
-    const res = await fetch('https://v1.hitokoto.cn/')
-    const data = await res.json()
-    hitokoto.value = {
-      content: data.hitokoto,
-      fromWho: data.from_who,
-      from: data.from,
+    const provider = hitokotoProvider.value
+    const { data } = await api.hitokoto.get({ query: { provider } })
+    if (data) {
+      hitokoto.value = data
     }
   }
 

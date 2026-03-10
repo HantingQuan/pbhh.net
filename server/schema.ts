@@ -50,21 +50,30 @@ export const userFollows = sqliteTable('user_follows', {
   primaryKey({ columns: [table.followerUsername, table.followingUsername] }),
 ])
 
+export const notifications = sqliteTable('notifications', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  username: text('username').notNull().references(() => users.username),
+  type: text('type').notNull(),
+  actorUsername: text('actor_username').notNull().references(() => users.username),
+  postId: integer('post_id').notNull(),
+  replyId: integer('reply_id'),
+  read: integer('read', { mode: 'boolean' }).notNull().default(false),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
 export const notificationPrefs = sqliteTable('notification_prefs', {
   username: text('username').notNull().references(() => users.username),
-  type: text('type').notNull(), // 'like' | 'reply' | 'post'
+  type: text('type').notNull(),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
 }, table => [
   primaryKey({ columns: [table.username, table.type] }),
 ])
 
-export const notifications = sqliteTable('notifications', {
+export const hitokoto = sqliteTable('hitokoto', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  username: text('username').notNull().references(() => users.username),
-  type: text('type').notNull(), // 'like' | 'reply'
-  actorUsername: text('actor_username').notNull().references(() => users.username),
-  postId: integer('post_id').notNull(),
-  replyId: integer('reply_id'),
-  read: integer('read', { mode: 'boolean' }).notNull().default(false),
+  content: text('content').notNull(),
+  from: text('from').notNull(),
+  fromWho: text('from_who').notNull(),
+  creator: text('creator').notNull().references(() => users.username),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })

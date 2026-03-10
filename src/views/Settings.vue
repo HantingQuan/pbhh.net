@@ -1,17 +1,18 @@
 <script setup lang="ts">
-import { Bell, Link, Palette, User } from 'lucide-vue-next'
+import { Bell, Link, Palette, Quote, User } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Separator } from '@/components/ui/separator'
 import SettingsBind from './settings/SettingsBind.vue'
+import SettingsHitokoto from './settings/SettingsHitokoto.vue'
 import SettingsNotifications from './settings/SettingsNotifications.vue'
 import SettingsProfile from './settings/SettingsProfile.vue'
 import SettingsTheme from './settings/SettingsTheme.vue'
 
 const { t } = useI18n()
 
-type Tab = 'profile' | 'theme' | 'bind' | 'notifications'
-const TABS: Tab[] = ['profile', 'theme', 'bind', 'notifications']
+type Tab = 'profile' | 'theme' | 'bind' | 'notifications' | 'hitokoto'
+const TABS: Tab[] = ['profile', 'theme', 'bind', 'notifications', 'hitokoto']
 
 function getTabFromHash(): Tab {
   const hash = location.hash.slice(1) as Tab
@@ -46,6 +47,7 @@ function setTab(tab: Tab) {
           <Palette v-else-if="tab === 'theme'" class="size-4 shrink-0" />
           <Link v-else-if="tab === 'bind'" class="size-4 shrink-0" />
           <Bell v-else-if="tab === 'notifications'" class="size-4 shrink-0" />
+          <Quote v-else-if="tab === 'hitokoto'" class="size-4 shrink-0" />
           {{ t(`settings.tabs.${tab}`) }}
         </button>
       </nav>
@@ -66,6 +68,7 @@ function setTab(tab: Tab) {
             </div>
           </template>
         </Suspense>
+        <SettingsHitokoto v-else-if="activeTab === 'hitokoto'" />
       </div>
     </div>
   </div>

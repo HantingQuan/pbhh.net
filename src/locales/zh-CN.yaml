@@ -37,6 +37,22 @@ settings:
     theme: 主题
     bind: 平台绑定
     notifications: 通知设置
+    hitokoto: 一言来源
+  hitokoto:
+    local: 本站投稿
+    types:
+      a: 动画
+      b: 漫画
+      c: 游戏
+      d: 文学
+      e: 原创
+      f: 来自网络
+      g: 其他
+      h: 影视
+      i: 诗词
+      j: 网易云
+      k: 哲学
+      l: 抖机灵
   themeHint: 选择界面显示的外观主题。
   theme:
     light: 亮色

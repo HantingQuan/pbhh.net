@@ -7,18 +7,10 @@ import { user } from '@/lib/api'
 
 const { t } = useI18n()
 const { hitokoto } = useHitokoto()
-const fromLine = computed(() => {
-  if (hitokoto.value) {
-    return hitokoto.value.fromWho
-      ? `——${hitokoto.value.fromWho}「${hitokoto.value.from}」`
-      : `——「${hitokoto.value.from}」`
-  }
-  return ''
-})
 </script>
 
 <template>
-  <div class="space-y-4 text-center my-auto">
+  <div class="space-y-4 text-center my-auto px-8">
     <div v-if="user">
       {{ t('home.welcome', user) }}
     </div>
@@ -48,8 +40,8 @@ const fromLine = computed(() => {
       </template>
     </Translation>
     <div v-if="hitokoto" class="text-muted-foreground italic text-sm flex flex-col">
-      <span class="pr-[2em]">{{ hitokoto.content }}</span>
-      <span class="pl-[2em] self-end">{{ fromLine }}</span>
+      <span class="pr-[2em] text-start whitespace-pre-wrap">{{ hitokoto.content }}</span>
+      <span class="pl-[2em] self-end">{{ hitokoto.from }}</span>
     </div>
   </div>
 </template>

@@ -10,6 +10,7 @@ const app = new Elysia({ prefix: '/api' })
   .use(import('@server/posts'))
   .use(import('@server/follow'))
   .use(import('@server/bind'))
+  .use(import('@server/hitokoto'))
   .use(import('@server/admin'))
   .listen(3000)
 
