@@ -6,10 +6,7 @@ import PostList from '@/components/PostList.vue'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { useAvatar } from '@/composables/useAvatar'
-import { useScrollRestore } from '@/composables/useScrollRestore'
 import { api, user } from '@/lib/api'
-
-defineOptions({ name: 'UserPage' })
 
 const route = useRoute()
 const { t } = useI18n()
@@ -33,14 +30,10 @@ const { avatarUrl } = useAvatar(() => profile.value?.avatar)
 
 const isSelf = computed(() => user.value?.username === pageUsername.value)
 
-const listKey = ref(pageUsername.value)
-
 async function load() {
-  const username = pageUsername.value
-  listKey.value = username
   profile.value = null
   notFound.value = false
-  const { data, error } = await api.users({ username }).get()
+  const { data, error } = await api.users({ username: pageUsername.value }).get()
   if (error || !data) {
     notFound.value = true
   }
@@ -64,12 +57,8 @@ async function toggleFollow() {
   followLoading.value = false
 }
 
-useScrollRestore()
-
 onMounted(load)
-watch(pageUsername, (username) => {
-  username && username !== listKey.value && load()
-})
+watch(pageUsername, load)
 </script>
 
 <template>
@@ -98,7 +87,7 @@ watch(pageUsername, (username) => {
         {{ following ? t('userPage.unfollow') : t('userPage.follow') }}
       </Button>
     </div>
-    <PostList :key="listKey" :username="pageUsername" disable-user-link />
+    <PostList :key="pageUsername" :username="pageUsername" disable-user-link />
   </div>
 
   <div v-else-if="notFound">
