@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "declaration": true,
+    "outDir": "dist",
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "modules/events/bus.ts"
+  ]
+}
