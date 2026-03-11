@@ -39,6 +39,7 @@ interface GameEvent {
   nextPlayer?: string | null
   winner?: string | null
   reason?: 'command' | 'winner' | 'no_players'
+  invalidReason?: 'timeout' | 'no_keyword' | 'duplicate'
 }
 
 interface PendingInvite {
@@ -298,10 +299,17 @@ function gameEventText(entry: GameEvent): string {
         : t('room.game.fhl.endCommand')
     case 'valid':
       return t('room.game.fhl.valid', { username: entry.username, next: entry.nextPlayer })
-    case 'invalid':
+    case 'invalid': {
+      const reasonKey = entry.invalidReason === 'duplicate'
+        ? 'duplicate'
+        : entry.invalidReason === 'timeout'
+          ? 'timeout'
+          : 'noKeyword'
+      const reason = t(`room.game.fhl.reason.${reasonKey}`)
       return entry.nextPlayer === null
-        ? t('room.game.fhl.invalidGameOver', { username: entry.username, winner: entry.winner ?? '—' })
-        : t('room.game.fhl.invalid', { username: entry.username, next: entry.nextPlayer })
+        ? t('room.game.fhl.invalidGameOver', { username: entry.username, winner: entry.winner ?? '—', reason })
+        : t('room.game.fhl.invalid', { username: entry.username, next: entry.nextPlayer, reason })
+    }
     case 'invite':
       return t('room.game.fhl.inviteEvent', { host: entry.hostNickname ?? entry.host, keyword: entry.keyword })
     case 'invite_cancelled':

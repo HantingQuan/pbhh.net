@@ -24,7 +24,7 @@ export interface ServerMessageMap {
   game_start: { keyword: string, players: string[], currentPlayer: string, turnDeadline: number, turnTimeoutMs: number }
   game_end: { reason: 'command' | 'winner', winner?: string }
   game_valid: { username: string, nextPlayer: string, turnDeadline: number }
-  game_invalid: { username: string, nextPlayer: string | null, winner: string | null, turnDeadline: number | null }
+  game_invalid: { username: string, nextPlayer: string | null, winner: string | null, turnDeadline: number | null, invalidReason?: 'timeout' | 'no_keyword' | 'duplicate' }
 }
 
 export type ClientMsg = { [K in keyof ClientMessageMap]: { type: K } & ClientMessageMap[K] }[keyof ClientMessageMap]

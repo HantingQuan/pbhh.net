@@ -208,8 +208,12 @@ room:
       endCommand: 飞花令已结束
       endWinner: '飞花令结束！{winner} 获胜！'
       valid: '{username} ✓ → 下一位：{next}'
-      invalid: '{username} ✗ 出局 → 下一位：{next}'
-      invalidGameOver: '{username} ✗ 出局，游戏结束！{winner} 获胜！'
+      invalid: '{username} ✗（{reason}）出局 → 下一位：{next}'
+      invalidGameOver: '{username} ✗（{reason}）出局，游戏结束！{winner} 获胜！'
+      reason:
+        timeout: 超时
+        noKeyword: 未含关键字
+        duplicate: 诗句重复
 error:
   invalidCredentials: 用户名或密码错误
   badRequest: 参数错误

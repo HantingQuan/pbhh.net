@@ -71,6 +71,7 @@ function onTurnTimeout(roomId: number) {
       nextPlayer: result.nextPlayer,
       winner: result.winner,
       turnDeadline: deadline,
+      invalidReason: result.invalidReason,
     })
   }
 }
@@ -227,6 +228,7 @@ export default new Elysia({ prefix: '/rooms' })
               nextPlayer: result.nextPlayer,
               winner: result.winner,
               turnDeadline: deadline,
+              invalidReason: result.invalidReason,
             })
           }
         }

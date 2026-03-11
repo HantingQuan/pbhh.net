@@ -1,18 +1,27 @@
 /** 飞花令游戏逻辑（纯函数，无副作用） */
 
+/** 淘汰原因：timeout=超时未答, no_keyword=未含关键字, duplicate=诗句重复 */
+export type InvalidReason = 'timeout' | 'no_keyword' | 'duplicate'
+
 export interface FeiHuaLingState {
   keyword: string
-  activePlayers: string[]  // 当前仍在局的玩家（按出场顺序）
-  turnIndex: number        // 当前轮到 activePlayers[turnIndex]
-  usedLines: Set<string>   // 已使用的诗句（防止重复）
-  turnTimeoutMs: number    // 每轮限时（毫秒）
+  activePlayers: string[] // 当前仍在局的玩家（按出场顺序）
+  turnIndex: number // 当前轮到 activePlayers[turnIndex]
+  usedLines: Set<string> // 已使用的诗句（标准化后存储，防止重复）
+  turnTimeoutMs: number // 每轮限时（毫秒）
 }
 
 export interface MoveResult {
   isCurrentPlayer: boolean
-  valid: boolean           // 仅当 isCurrentPlayer 时有意义
+  valid: boolean // 仅当 isCurrentPlayer 时有意义
+  invalidReason?: InvalidReason // 仅当 !valid 时有意义
   nextPlayer: string | null // null 表示游戏结束
-  winner: string | null    // 游戏结束时的获胜者
+  winner: string | null // 游戏结束时的获胜者
+}
+
+/** 去除标点、空白后标准化，用于去重比较 */
+function normalize(text: string): string {
+  return text.replace(/[\s\u3001-\u303F\uFF00-\uFFEF"',.!?;:[\]{}()\-—…·~]/g, '').toLowerCase()
 }
 
 export function createGame(keyword: string, players: string[], turnTimeoutMs: number): FeiHuaLingState {
@@ -20,7 +29,7 @@ export function createGame(keyword: string, players: string[], turnTimeoutMs: nu
 }
 
 export function currentPlayer(state: FeiHuaLingState): string {
-  return state.activePlayers[state.turnIndex]
+  return state.activePlayers[state.turnIndex]!
 }
 
 /**
@@ -39,11 +48,22 @@ export function processMove(
     return { result: { isCurrentPlayer: false, valid: true, nextPlayer: cp, winner: null }, newState: state }
   }
 
-  const valid = content.includes(state.keyword) && !state.usedLines.has(content)
+  const isTimeout = !content.trim()
+  const hasKeyword = !isTimeout && content.includes(state.keyword)
+  const isDuplicate = hasKeyword && state.usedLines.has(normalize(content))
+  const valid = hasKeyword && !isDuplicate
+
+  const invalidReason: InvalidReason | undefined = isTimeout
+    ? 'timeout'
+    : !hasKeyword
+        ? 'no_keyword'
+        : isDuplicate
+          ? 'duplicate'
+          : undefined
 
   if (valid) {
     const newUsedLines = new Set(state.usedLines)
-    newUsedLines.add(content)
+    newUsedLines.add(normalize(content))
     const newTurnIndex = (state.turnIndex + 1) % state.activePlayers.length
     const newState: FeiHuaLingState = { ...state, turnIndex: newTurnIndex, usedLines: newUsedLines }
     return {
@@ -57,7 +77,7 @@ export function processMove(
   if (newActivePlayers.length <= 1) {
     const winner = newActivePlayers[0] ?? null
     return {
-      result: { isCurrentPlayer: true, valid: false, nextPlayer: null, winner },
+      result: { isCurrentPlayer: true, valid: false, invalidReason, nextPlayer: null, winner },
       newState: { ...state, activePlayers: newActivePlayers, turnIndex: 0 },
     }
   }
@@ -65,7 +85,7 @@ export function processMove(
   const newTurnIndex = state.turnIndex % newActivePlayers.length
   const newState: FeiHuaLingState = { ...state, activePlayers: newActivePlayers, turnIndex: newTurnIndex }
   return {
-    result: { isCurrentPlayer: true, valid: false, nextPlayer: currentPlayer(newState), winner: null },
+    result: { isCurrentPlayer: true, valid: false, invalidReason, nextPlayer: currentPlayer(newState), winner: null },
     newState,
   }
 }
