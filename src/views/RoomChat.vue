@@ -2,7 +2,7 @@
 import type { ServerMessageMap } from 'server/modules/room/model'
 import { ArrowLeft, Flag, Send, Swords } from 'lucide-vue-next'
 import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { Translation, useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -79,6 +79,7 @@ const draft = ref('')
 const poemDraft = ref('')
 const roomName = ref(t('room.unnamed', { id: props.id }))
 const onlineUsers = ref<Map<string, OnlineUser>>(new Map())
+const observerCount = ref(0)
 const gameState = ref<GameState | null>(null)
 const pendingInvite = ref<PendingInvite | null>(null)
 const inviteMyResponse = ref<boolean | null>(null)
@@ -208,11 +209,12 @@ const handlers = {
     entries.value.push({ kind: 'game', data: { event: 'invite_cancelled', ...data } })
     scrollToBottom()
   },
-  roster({ users }) {
+  roster({ users, observers }) {
     const map = new Map<string, OnlineUser>()
     for (const u of users)
       map.set(u.username, u)
     onlineUsers.value = map
+    observerCount.value = observers
   },
   game_start(data) {
     pendingInvite.value = null
@@ -417,9 +419,12 @@ onUnmounted(() => {
         <ArrowLeft class="size-5" />
       </button>
       <span class="font-semibold text-lg flex-1">{{ roomName }}</span>
-      <span class="text-xs text-muted-foreground mr-1">{{ t('room.online', { count: onlineUsers.size }) }}</span>
+      <span class="text-xs text-muted-foreground mr-1">
+        {{ t('room.online', { count: onlineUsers.size }) }}
+        <span v-if="observerCount > 0"> · {{ t('room.observers', { count: observerCount }) }}</span>
+      </span>
       <Button
-        v-if="!gameState && !pendingInvite"
+        v-if="user && !gameState && !pendingInvite"
         variant="ghost"
         size="sm"
         class="gap-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/40"
@@ -691,7 +696,7 @@ onUnmounted(() => {
     </div>
 
     <!-- 普通输入区（无游戏时，或游戏中非当前选手） -->
-    <div v-else class="border-t px-4 py-3 flex gap-2 items-end shrink-0">
+    <div v-else-if="user" class="border-t px-4 py-3 flex gap-2 items-end shrink-0">
       <Textarea
         v-model="draft"
         :placeholder="$t('room.messagePlaceholder')"
@@ -702,6 +707,15 @@ onUnmounted(() => {
       <Button :disabled="!draft.trim()" size="sm" @click="send">
         <Send class="size-4" />
       </Button>
+    </div>
+
+    <!-- 未登录提示 -->
+    <div v-else class="border-t px-4 py-3 shrink-0 text-center text-sm text-muted-foreground">
+      <Translation keypath="room.loginRequired">
+        <template #login>
+          <RouterLink to="/login" class="link">{{ t('home.loginLink') }}</RouterLink>
+        </template>
+      </Translation>
     </div>
   </div>
 </template>

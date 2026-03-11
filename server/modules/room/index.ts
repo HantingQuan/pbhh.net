@@ -145,18 +145,21 @@ export default new Elysia({ prefix: '/rooms' })
       const { roomId: roomIdStr } = ws.data.params
       const roomId = Number(roomIdStr)
 
-      const payload = await ws.data.jwt.verify(token)
-      if (!payload || typeof payload.sub !== 'string') {
-        ws.close()
-        return
-      }
-      const username = payload.sub
-
       const [room] = await RoomService.findRoom(roomId)
       if (!room) {
         ws.close()
         return
       }
+
+      const payload = await ws.data.jwt.verify(token)
+      if (!payload || typeof payload.sub !== 'string') {
+        // 未登录：作为只读观察者接收广播
+        if (!RoomService.roomObservers.has(roomId))
+          RoomService.roomObservers.set(roomId, new Map())
+        RoomService.roomObservers.get(roomId)!.set(ws.raw, data => ws.send(data))
+        return
+      }
+      const username = payload.sub
 
       const [userInfo] = await RoomService.getUserInfo(username)
 
@@ -358,6 +361,12 @@ export default new Elysia({ prefix: '/rooms' })
       const { roomId: roomIdStr } = ws.data.params
       const roomId = Number(roomIdStr)
       RoomService.handleClientLeave(roomId, ws.raw)
+      const observers = RoomService.roomObservers.get(roomId)
+      if (observers) {
+        observers.delete(ws.raw)
+        if (observers.size === 0)
+          RoomService.roomObservers.delete(roomId)
+      }
     },
   })
 

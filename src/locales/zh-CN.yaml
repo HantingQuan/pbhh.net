@@ -179,8 +179,10 @@ room:
   joined: 加入了房间
   left: 离开了房间
   online: '{count} 人在线'
+  observers: '{count} 人旁观'
   unnamed: '房间 #{id}'
   messagePlaceholder: 输入消息…
+  loginRequired: '{login}后才能发言'
   rename: 重命名
   renamePlaceholder: 房间名称
   game:

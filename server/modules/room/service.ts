@@ -7,6 +7,9 @@ import * as FeiHuaLing from './games/feihualing'
 
 export const roomClients = new Map<number, Map<object, RoomClient>>()
 
+// 未登录只读观察者：roomId → (rawWs → sendFn)
+export const roomObservers = new Map<number, Map<object, (data: string) => void>>()
+
 // ── In-memory 飞花令游戏状态 ──────────────────────────────────────────────────
 
 export const roomGames = new Map<number, FeiHuaLing.FeiHuaLingState>()
@@ -52,10 +55,15 @@ export function clearGameTimer(roomId: number) {
 
 export function broadcastRoom(roomId: number, data: string) {
   const clients = roomClients.get(roomId)
-  if (!clients)
-    return
-  for (const client of clients.values())
-    client.send(data)
+  if (clients) {
+    for (const client of clients.values())
+      client.send(data)
+  }
+  const observers = roomObservers.get(roomId)
+  if (observers) {
+    for (const sendFn of observers.values())
+      sendFn(data)
+  }
 }
 
 export function send<T extends keyof ServerMessageMap>(roomId: number, type: T, payload: ServerMessageMap[T]) {
@@ -71,7 +79,8 @@ export function broadcastRoster(roomId: number) {
     nickname: c.nickname,
     avatar: c.avatar,
   }))
-  send(roomId, 'roster', { users: userList })
+  const observers = roomObservers.get(roomId)?.size ?? 0
+  send(roomId, 'roster', { users: userList, observers })
 }
 
 /** 统一处理客户端断开（WS close 或心跳超时均调用此函数） */

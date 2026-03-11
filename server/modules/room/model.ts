@@ -19,7 +19,7 @@ export interface ServerMessageMap {
   join: { username: string }
   leave: { username: string }
   pong: Record<string, never>
-  roster: { users: Array<{ username: string, nickname: string, avatar: string }> }
+  roster: { users: Array<{ username: string, nickname: string, avatar: string }>, observers: number }
   // 飞花令游戏事件
   game_invite: { keyword: string, host: string, hostNickname: string, players: string[], deadline: number }
   game_invite_progress: { username: string, accepted: boolean }
