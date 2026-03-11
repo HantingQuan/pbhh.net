@@ -1,7 +1,7 @@
 /** 飞花令游戏逻辑（纯函数，无副作用） */
 
-/** 淘汰原因：timeout=超时未答, no_keyword=未含关键字, duplicate=诗句重复 */
-export type InvalidReason = 'timeout' | 'no_keyword' | 'duplicate'
+/** 淘汰原因：timeout=超时未答, no_keyword=未含关键字, duplicate=诗句重复, invalid_poem=非真实诗句 */
+export type InvalidReason = 'timeout' | 'no_keyword' | 'duplicate' | 'invalid_poem'
 
 export interface FeiHuaLingState {
   keyword: string
@@ -82,6 +82,30 @@ export function processMove(
     }
   }
 
+  const newTurnIndex = state.turnIndex % newActivePlayers.length
+  const newState: FeiHuaLingState = { ...state, activePlayers: newActivePlayers, turnIndex: newTurnIndex }
+  return {
+    result: { isCurrentPlayer: true, valid: false, invalidReason, nextPlayer: currentPlayer(newState), winner: null },
+    newState,
+  }
+}
+
+/**
+ * 以指定原因淘汰当前玩家（用于外部异步校验失败时）。
+ */
+export function eliminateCurrentPlayer(
+  state: FeiHuaLingState,
+  invalidReason: InvalidReason,
+): { result: MoveResult, newState: FeiHuaLingState } {
+  const username = currentPlayer(state)
+  const newActivePlayers = state.activePlayers.filter(p => p !== username)
+  if (newActivePlayers.length <= 1) {
+    const winner = newActivePlayers[0] ?? null
+    return {
+      result: { isCurrentPlayer: true, valid: false, invalidReason, nextPlayer: null, winner },
+      newState: { ...state, activePlayers: newActivePlayers, turnIndex: 0 },
+    }
+  }
   const newTurnIndex = state.turnIndex % newActivePlayers.length
   const newState: FeiHuaLingState = { ...state, activePlayers: newActivePlayers, turnIndex: newTurnIndex }
   return {

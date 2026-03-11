@@ -6,6 +6,58 @@ import * as FeiHuaLing from './games/feihualing'
 import { roomNameBody, wsQuery } from './model'
 import * as RoomService from './service'
 
+// ── 诗句有效性校验 ────────────────────────────────────────────────────────────
+
+async function validatePoem(content: string): Promise<boolean | null> {
+  try {
+    const res = await fetch(
+      `https://www.guwendao.net/search.aspx?value=${encodeURIComponent(content)}`,
+      { signal: AbortSignal.timeout(5_000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible)' } },
+    )
+    if (!res.ok)
+      return null
+    const html = await res.text()
+    const textareaTexts = [...html.matchAll(/<textarea[^>]*>([\s\S]*?)<\/textarea>/gi)].map(m => m[1] ?? '')
+    return textareaTexts.some(text => text.includes(content))
+  }
+  catch {
+    return null
+  }
+}
+
+// ── 投票逻辑 ──────────────────────────────────────────────────────────────────
+
+const VOTE_TIMEOUT_MS = 15_000
+
+function startVote(roomId: number, submitter: string, content: string, game: FeiHuaLing.FeiHuaLingState): Promise<boolean> {
+  return new Promise((resolve) => {
+    const voters = game.activePlayers.filter(p => p !== submitter)
+    if (voters.length === 0) {
+      resolve(true)
+      return
+    }
+
+    const deadline = Date.now() + VOTE_TIMEOUT_MS
+    const responses = new Map<string, boolean>()
+    let timer: ReturnType<typeof setTimeout>
+
+    const finalize = () => {
+      clearTimeout(timer)
+      RoomService.roomVotes.delete(roomId)
+      const yes = [...responses.values()].filter(Boolean).length
+      const no = responses.size - yes
+      const valid = yes >= no
+      RoomService.send(roomId, 'game_vote_result', { valid, yesCount: yes, noCount: no })
+      resolve(valid)
+    }
+
+    timer = setTimeout(finalize, VOTE_TIMEOUT_MS)
+    RoomService.roomVotes.set(roomId, { submitter, content, voters, responses, timer, finalize })
+    RoomService.clearGameTimer(roomId)
+    RoomService.send(roomId, 'game_vote', { username: submitter, content, voters, deadline })
+  })
+}
+
 // ── 邀请逻辑 ──────────────────────────────────────────────────────────────────
 
 const INVITE_TIMEOUT_MS = 10_000
@@ -173,6 +225,23 @@ export default new Elysia({ prefix: '/rooms' })
         return
       }
 
+      if (clientMsg.type === 'game_vote_response') {
+        const vote = RoomService.roomVotes.get(roomId)
+        if (vote && vote.voters.includes(client.username) && !vote.responses.has(client.username)) {
+          vote.responses.set(client.username, clientMsg.valid)
+          if (vote.voters.every(v => vote.responses.has(v)))
+            vote.finalize()
+        }
+        return
+      }
+
+      if (clientMsg.type === 'game_surrender') {
+        const surrenderGame = RoomService.roomGames.get(roomId)
+        if (surrenderGame && FeiHuaLing.currentPlayer(surrenderGame) === client.username)
+          onTurnTimeout(roomId)
+        return
+      }
+
       if (clientMsg.type === 'game_end_fhl') {
         if (RoomService.roomGames.has(roomId)) {
           RoomService.roomGames.delete(roomId)
@@ -193,7 +262,8 @@ export default new Elysia({ prefix: '/rooms' })
 
       const game = RoomService.roomGames.get(roomId)
       if (game) {
-        const { result, newState } = FeiHuaLing.processMove(game, client.username, content)
+        // 先做本地校验（同步），再保存消息，再做远程诗句校验（异步）
+        let { result, newState } = FeiHuaLing.processMove(game, client.username, content)
 
         const { saved, userInfo } = await RoomService.saveMessage(roomId, client.username, content)
         RoomService.send(roomId, 'message', {
@@ -206,6 +276,21 @@ export default new Elysia({ prefix: '/rooms' })
         })
 
         if (result.isCurrentPlayer) {
+          // 本地通过后，异步校验是否为真实诗句
+          if (result.valid) {
+            const apiResult = await validatePoem(content)
+            const isRealPoem = apiResult !== null
+              ? apiResult
+              : await startVote(roomId, client.username, content, game)
+            if (!isRealPoem) {
+              const currentGame = RoomService.roomGames.get(roomId)
+              if (!currentGame) {
+                return
+              }
+              ;({ result, newState } = FeiHuaLing.eliminateCurrentPlayer(currentGame, 'invalid_poem'))
+            }
+          }
+
           if (result.nextPlayer === null) {
             RoomService.roomGames.delete(roomId)
             RoomService.clearGameTimer(roomId)

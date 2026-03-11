@@ -24,6 +24,17 @@ export interface PendingInvite {
 
 export const roomPendingInvites = new Map<number, PendingInvite>()
 
+export interface PendingVote {
+  submitter: string
+  content: string
+  voters: string[]
+  responses: Map<string, boolean>
+  timer: ReturnType<typeof setTimeout>
+  finalize: () => void
+}
+
+export const roomVotes = new Map<number, PendingVote>()
+
 // ── 回合计时器 ────────────────────────────────────────────────────────────────
 
 export const TURN_TIMEOUT_MS = 30_000

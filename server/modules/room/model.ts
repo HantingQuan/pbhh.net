@@ -9,6 +9,8 @@ export interface ClientMessageMap {
   game_start_fhl: { keyword: string, players: string[], timeoutMs: number }
   game_end_fhl: Record<string, never>
   game_invite_response: { accepted: boolean }
+  game_vote_response: { valid: boolean }
+  game_surrender: Record<string, never>
 }
 
 /** Messages sent from server → client */
@@ -24,7 +26,9 @@ export interface ServerMessageMap {
   game_start: { keyword: string, players: string[], currentPlayer: string, turnDeadline: number, turnTimeoutMs: number }
   game_end: { reason: 'command' | 'winner', winner?: string }
   game_valid: { username: string, nextPlayer: string, turnDeadline: number }
-  game_invalid: { username: string, nextPlayer: string | null, winner: string | null, turnDeadline: number | null, invalidReason?: 'timeout' | 'no_keyword' | 'duplicate' }
+  game_invalid: { username: string, nextPlayer: string | null, winner: string | null, turnDeadline: number | null, invalidReason?: 'timeout' | 'no_keyword' | 'duplicate' | 'invalid_poem' }
+  game_vote: { username: string, content: string, voters: string[], deadline: number }
+  game_vote_result: { valid: boolean, yesCount: number, noCount: number }
 }
 
 export type ClientMsg = { [K in keyof ClientMessageMap]: { type: K } & ClientMessageMap[K] }[keyof ClientMessageMap]
