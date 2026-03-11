@@ -124,7 +124,7 @@ post:
   quote: '{nickname}：{content}'
   quoteNameOnly: '{nickname}'
   compose:
-    placeholder: 在此留下你的题壁…
+    placeholder: 在此题壁…
     submit: 题壁
   comments: 评论
   readMore: 展开全文
