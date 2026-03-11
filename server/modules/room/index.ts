@@ -2,28 +2,10 @@ import type { ClientMsg } from './model'
 import { Elysia } from 'elysia'
 import { requireAuth } from '../auth/guard'
 import { jwtPlugin } from '../jwt'
+
 import * as FeiHuaLing from './games/feihualing'
 import { roomNameBody, wsQuery } from './model'
 import * as RoomService from './service'
-
-// ── 诗句有效性校验 ────────────────────────────────────────────────────────────
-
-async function validatePoem(content: string): Promise<boolean | null> {
-  try {
-    const res = await fetch(
-      `https://www.guwendao.net/search.aspx?value=${encodeURIComponent(content)}`,
-      { signal: AbortSignal.timeout(5_000), headers: { 'User-Agent': 'Mozilla/5.0 (compatible)' } },
-    )
-    if (!res.ok)
-      return null
-    const html = await res.text()
-    const textareaTexts = [...html.matchAll(/<textarea[^>]*>([\s\S]*?)<\/textarea>/gi)].map(m => m[1] ?? '')
-    return textareaTexts.some(text => text.includes(content))
-  }
-  catch {
-    return null
-  }
-}
 
 // ── 投票逻辑 ──────────────────────────────────────────────────────────────────
 
@@ -276,12 +258,9 @@ export default new Elysia({ prefix: '/rooms' })
         })
 
         if (result.isCurrentPlayer) {
-          // 本地通过后，异步校验是否为真实诗句
+          // 本地通过后，发起投票校验是否为真实诗句
           if (result.valid) {
-            const apiResult = await validatePoem(content)
-            const isRealPoem = apiResult !== null
-              ? apiResult
-              : await startVote(roomId, client.username, content, game)
+            const isRealPoem = await startVote(roomId, client.username, content, game)
             if (!isRealPoem) {
               const currentGame = RoomService.roomGames.get(roomId)
               if (!currentGame) {
