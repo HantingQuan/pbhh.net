@@ -1,10 +1,9 @@
 <!-- eslint-disable no-alert -->
 <script setup lang="ts">
-import { ChevronDown } from 'lucide-vue-next'
+import { ChevronDown, Eye, EyeOff } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Spinner } from '@/components/ui/spinner'
 
 type Row = Record<string, unknown>
@@ -42,6 +41,24 @@ const tableColumns = computed(() =>
       : [],
 )
 
+// ── Password column hiding ────────────────────────────────────────────────────
+const PASSWORD_PATTERN = /password|passwd|secret/i
+const hiddenCols = ref<Set<string>>(new Set())
+
+watch(tableColumns, (cols) => {
+  hiddenCols.value = new Set(cols.filter(col => PASSWORD_PATTERN.test(col)))
+}, { immediate: true })
+
+function toggleColVisibility(col: string) {
+  const next = new Set(hiddenCols.value)
+  if (next.has(col))
+    next.delete(col)
+  else
+    next.add(col)
+  hiddenCols.value = next
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
 const authHeaders = computed(() => ({
   Authorization: `Bearer ${localStorage.getItem('token') ?? ''}`,
 }))
@@ -197,15 +214,15 @@ onMounted(loadTables)
         + 新增
       </Button>
       <span class="text-xs text-muted-foreground">{{ tableRows.length }} 条</span>
-      <template v-if="totalDbPages > 1">
+      <div v-if="totalDbPages > 1" class="flex items-center gap-1 shrink-0">
         <Button variant="ghost" size="sm" :disabled="dbPage === 0" @click="dbPage--">‹</Button>
         <span class="text-xs text-muted-foreground">{{ dbPage + 1 }}/{{ totalDbPages }}</span>
         <Button variant="ghost" size="sm" :disabled="dbPage >= totalDbPages - 1" @click="dbPage++">›</Button>
-      </template>
+      </div>
     </div>
 
-    <ScrollArea class="flex-1">
-      <table class="text-xs w-full border-collapse">
+    <div class="flex-1 overflow-auto">
+      <table class="text-xs border-collapse min-w-max w-full">
         <thead class="sticky top-0 bg-background shadow-[0_1px_0_0_var(--border)]">
           <tr>
             <th
@@ -214,7 +231,17 @@ onMounted(loadTables)
               class="text-left px-3 py-2 font-medium border-r whitespace-nowrap"
               :class="tablePks.includes(col) ? 'text-primary' : 'text-muted-foreground'"
             >
-              {{ col }}
+              <span class="inline-flex items-center gap-1">
+                {{ col }}
+                <button
+                  v-if="PASSWORD_PATTERN.test(col)"
+                  class="opacity-50 hover:opacity-100"
+                  @click="toggleColVisibility(col)"
+                >
+                  <EyeOff v-if="hiddenCols.has(col)" class="size-3" />
+                  <Eye v-else class="size-3" />
+                </button>
+              </span>
             </th>
             <th class="px-3 py-2 text-muted-foreground">
               操作
@@ -234,7 +261,7 @@ onMounted(loadTables)
               <input
                 v-else
                 v-model="insertDraft[col] as string"
-                :type="colType(col) === 'number' ? 'number' : 'text'"
+                :type="colType(col) === 'number' ? 'number' : hiddenCols.has(col) ? 'password' : 'text'"
                 class="w-full bg-transparent border border-input rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-ring"
               >
             </td>
@@ -267,7 +294,7 @@ onMounted(loadTables)
                   <input
                     v-else
                     v-model="editDraft[col] as string"
-                    :type="colType(col) === 'number' ? 'number' : 'text'"
+                    :type="colType(col) === 'number' ? 'number' : hiddenCols.has(col) ? 'password' : 'text'"
                     class="w-full bg-transparent border border-input rounded px-1.5 py-0.5 outline-none focus:ring-1 focus:ring-ring"
                   >
                 </template>
@@ -286,10 +313,11 @@ onMounted(loadTables)
               <td
                 v-for="col in tableColumns"
                 :key="col"
-                class="px-3 py-1.5 border-r max-w-60 truncate"
-                :title="String(row[col] ?? '')"
+                class="px-3 py-1.5 border-r max-w-60 truncate font-mono"
+                :title="hiddenCols.has(col) ? '' : String(row[col] ?? '')"
               >
-                {{ cellValue(row[col]) }}
+                <span v-if="hiddenCols.has(col)" class="tracking-widest text-muted-foreground">{{ '•'.repeat(12) }}</span>
+                <template v-else>{{ cellValue(row[col]) }}</template>
               </td>
               <td class="px-3 py-1.5 flex gap-3 items-center">
                 <button class="text-xs text-blue-500 hover:text-blue-700" @click="startEdit(i)">
@@ -306,6 +334,6 @@ onMounted(loadTables)
       <div v-if="tableRows.length === 0 && !loadingTable && !insertDraft" class="text-muted-foreground py-8 text-center text-sm">
         暂无数据
       </div>
-    </ScrollArea>
+    </div>
   </div>
 </template>

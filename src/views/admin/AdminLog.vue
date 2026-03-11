@@ -24,10 +24,6 @@ const LEVEL_CLASS: Record<string, string> = {
   trace: 'text-muted-foreground',
 }
 
-function levelClass(level: string) {
-  return LEVEL_CLASS[level] ?? 'text-muted-foreground'
-}
-
 watch(() => props.logs.length, () => {
   if (props.autoScroll)
     nextTick(() => logEl.value?.viewport?.scrollTo(0, logEl.value.viewport!.scrollHeight))
@@ -42,8 +38,8 @@ watch(() => props.logs.length, () => {
       class="flex gap-2 leading-5"
     >
       <span class="text-muted-foreground shrink-0">{{ d(entry.timestamp, 'long') }}</span>
-      <span class="shrink-0 w-8 uppercase font-semibold" :class="levelClass(entry.level)">{{ entry.level }}</span>
-      <span class="break-all whitespace-pre-wrap" :class="levelClass(entry.level)">{{ entry.message }}</span>
+      <span class="shrink-0 w-8 uppercase font-semibold" :class="LEVEL_CLASS[entry.level]">{{ entry.level }}</span>
+      <span class="break-all whitespace-pre-wrap">{{ entry.message }}</span>
     </div>
     <div v-if="logs.length === 0" class="text-muted-foreground py-4 text-center">
       {{ emptyText }}
