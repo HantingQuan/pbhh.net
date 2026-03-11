@@ -1,52 +1,21 @@
-import { asc, eq } from 'drizzle-orm'
-import { Elysia, t } from 'elysia'
-import { db, roomMessages, rooms, users } from '../../db'
+import type { ClientMsg } from './model'
+import { Elysia } from 'elysia'
 import { requireAuth } from '../auth/guard'
 import { jwtPlugin } from '../jwt'
-
-// ── In-memory room WS clients ─────────────────────────────────────────────────
-
-interface RoomClient {
-  username: string
-  send: (data: string) => void
-}
-
-const roomClients = new Map<number, Map<object, RoomClient>>()
-
-function broadcastRoom(roomId: number, data: string) {
-  const clients = roomClients.get(roomId)
-  if (!clients)
-    return
-  for (const client of clients.values())
-    client.send(data)
-}
-
-// ── Module ────────────────────────────────────────────────────────────────────
+import { roomNameBody, wsQuery } from './model'
+import * as RoomService from './service'
 
 export default new Elysia({ prefix: '/rooms' })
   .use(jwtPlugin)
 
   // Public: list rooms
-  .get('/', async () => {
-    return db
-      .select({
-        id: rooms.id,
-        name: rooms.name,
-        createdBy: rooms.createdBy,
-        createdAt: rooms.createdAt,
-      })
-      .from(rooms)
-      .orderBy(asc(rooms.createdAt))
-  })
+  .get('/', () => RoomService.listRooms())
 
-  // WS: real-time room chat (auth via token query param, defined BEFORE requireAuth)
-  .ws('/ws', {
-    query: t.Object({
-      token: t.String(),
-      roomId: t.String(),
-    }),
+  .ws('/ws/:roomId', {
+    query: wsQuery,
     async open(ws) {
-      const { token, roomId: roomIdStr } = ws.data.query
+      const { token } = ws.data.query
+      const { roomId: roomIdStr } = ws.data.params
       const roomId = Number(roomIdStr)
 
       const payload = await ws.data.jwt.verify(token)
@@ -56,72 +25,59 @@ export default new Elysia({ prefix: '/rooms' })
       }
       const username = payload.sub
 
-      const [room] = await db.select({ id: rooms.id }).from(rooms).where(eq(rooms.id, roomId))
+      const [room] = await RoomService.findRoom(roomId)
       if (!room) {
         ws.close()
         return
       }
 
-      if (!roomClients.has(roomId))
-        roomClients.set(roomId, new Map())
+      if (!RoomService.roomClients.has(roomId))
+        RoomService.roomClients.set(roomId, new Map())
 
-      roomClients.get(roomId)!.set(ws.raw, {
+      RoomService.roomClients.get(roomId)!.set(ws.raw, {
         username,
         send: data => ws.send(data),
       })
 
-      // Tell everyone someone joined
-      broadcastRoom(roomId, JSON.stringify({ type: 'join', username }))
+      RoomService.send(roomId, 'join', { username })
     },
-
     async message(ws, msg) {
-      const { roomId: roomIdStr } = ws.data.query
+      const { roomId: roomIdStr } = ws.data.params
       const roomId = Number(roomIdStr)
-      const client = roomClients.get(roomId)?.get(ws.raw)
+      const client = RoomService.roomClients.get(roomId)?.get(ws.raw)
       if (!client)
         return
 
-      if (typeof msg !== 'object' || msg === null || (msg as any).type !== 'message')
+      const clientMsg = msg as ClientMsg
+      if (typeof clientMsg !== 'object' || clientMsg === null || clientMsg.type !== 'message')
         return
 
-      const content = ((msg as any).content as string | undefined)?.trim()
+      const content = clientMsg.content?.trim()
       if (!content)
         return
 
-      const [saved] = await db
-        .insert(roomMessages)
-        .values({ roomId, username: client.username, content })
-        .returning()
+      const { saved, userInfo } = await RoomService.saveMessage(roomId, client.username, content)
 
-      const [userInfo] = await db
-        .select({ nickname: users.nickname, avatar: users.avatar })
-        .from(users)
-        .where(eq(users.username, client.username))
-
-      broadcastRoom(
-        roomId,
-        JSON.stringify({
-          type: 'message',
-          id: saved!.id,
-          username: client.username,
-          nickname: userInfo?.nickname ?? client.username,
-          avatar: userInfo?.avatar ?? '',
-          content: saved!.content,
-          createdAt: saved!.createdAt,
-        }),
-      )
+      RoomService.send(roomId, 'message', {
+        id: saved.id,
+        username: client.username,
+        nickname: userInfo?.nickname ?? client.username,
+        avatar: userInfo?.avatar ?? '',
+        content: saved.content,
+        createdAt: saved.createdAt,
+      })
     },
 
     close(ws) {
-      const { roomId: roomIdStr } = ws.data.query
+      const { roomId: roomIdStr } = ws.data.params
       const roomId = Number(roomIdStr)
-      const client = roomClients.get(roomId)?.get(ws.raw)
+      const client = RoomService.roomClients.get(roomId)?.get(ws.raw)
       if (!client)
         return
-      roomClients.get(roomId)!.delete(ws.raw)
-      if (roomClients.get(roomId)!.size === 0)
-        roomClients.delete(roomId)
-      broadcastRoom(roomId, JSON.stringify({ type: 'leave', username: client.username }))
+      RoomService.roomClients.get(roomId)!.delete(ws.raw)
+      if (RoomService.roomClients.get(roomId)!.size === 0)
+        RoomService.roomClients.delete(roomId)
+      RoomService.send(roomId, 'leave', { username: client.username })
     },
   })
 
@@ -129,54 +85,35 @@ export default new Elysia({ prefix: '/rooms' })
   .use(requireAuth)
 
   .post('/', async ({ username, body }) => {
-    const [room] = await db
-      .insert(rooms)
-      .values({ name: body.name, createdBy: username })
-      .returning()
+    const [room] = await RoomService.createRoom(username, body.name)
     return room!
   }, {
-    body: t.Object({ name: t.String({ minLength: 2, maxLength: 50 }) }),
+    body: roomNameBody,
   })
 
-  .get('/:id/messages', async ({ params }) => {
-    const roomId = Number(params.id)
-    return db
-      .select({
-        id: roomMessages.id,
-        content: roomMessages.content,
-        createdAt: roomMessages.createdAt,
-        username: roomMessages.username,
-        nickname: users.nickname,
-        avatar: users.avatar,
-      })
-      .from(roomMessages)
-      .innerJoin(users, eq(roomMessages.username, users.username))
-      .where(eq(roomMessages.roomId, roomId))
-      .orderBy(asc(roomMessages.createdAt))
-      .limit(200)
-  })
+  .get('/:id/messages', ({ params }) => RoomService.listMessages(Number(params.id)))
 
   .patch('/:id', async ({ username, params, body, status }) => {
     const roomId = Number(params.id)
-    const [room] = await db.select({ createdBy: rooms.createdBy }).from(rooms).where(eq(rooms.id, roomId))
+    const [room] = await RoomService.findRoom(roomId)
     if (!room)
       return status(404, { message: 'error.notFound' })
     if (room.createdBy !== username)
       return status(403, { message: 'error.forbidden' })
-    const [updated] = await db.update(rooms).set({ name: body.name }).where(eq(rooms.id, roomId)).returning()
+    const [updated] = await RoomService.updateRoom(roomId, body.name)
     return updated!
   }, {
-    body: t.Object({ name: t.String({ minLength: 2, maxLength: 50 }) }),
+    body: roomNameBody,
   })
 
   .delete('/:id', async ({ username, params, status }) => {
     const roomId = Number(params.id)
-    const [room] = await db.select({ createdBy: rooms.createdBy }).from(rooms).where(eq(rooms.id, roomId))
+    const [room] = await RoomService.findRoom(roomId)
     if (!room)
       return status(404, { message: 'error.notFound' })
     if (room.createdBy !== username)
       return status(403, { message: 'error.forbidden' })
-    await db.delete(roomMessages).where(eq(roomMessages.roomId, roomId))
-    await db.delete(rooms).where(eq(rooms.id, roomId))
+    await RoomService.deleteRoomMessages(roomId)
+    await RoomService.deleteRoom(roomId)
     return { ok: true }
   })

@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import type { ServerMessageMap } from 'server/modules/room/model'
 import { ArrowLeft, Send } from 'lucide-vue-next'
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { api, user } from '@/lib/api'
@@ -26,18 +29,37 @@ interface SystemEvent {
 
 type ChatEntry = { kind: 'message', data: Message } | { kind: 'system', data: SystemEvent }
 
+const { t } = useI18n()
 const entries = ref<ChatEntry[]>([])
 const draft = ref('')
-const roomName = ref('')
+const roomName = ref(t('room.unnamed', { id: props.id }))
 const onlineUsers = ref<Set<string>>(new Set())
-const messagesEl = ref<HTMLElement | null>(null)
+const bottomEl = ref<HTMLElement | null>(null)
 let ws: WebSocket | null = null
 
 function scrollToBottom() {
   nextTick(() => {
-    if (messagesEl.value)
-      messagesEl.value.scrollTop = messagesEl.value.scrollHeight
+    bottomEl.value?.scrollIntoView({ behavior: 'instant' })
   })
+}
+
+const handlers = {
+  message(data) {
+    entries.value.push({ kind: 'message', data })
+    scrollToBottom()
+  },
+  join({ username }) {
+    onlineUsers.value = new Set([...onlineUsers.value, username])
+    entries.value.push({ kind: 'system', data: { type: 'join', username } })
+  },
+  leave({ username }) {
+    const next = new Set(onlineUsers.value)
+    next.delete(username)
+    onlineUsers.value = next
+    entries.value.push({ kind: 'system', data: { type: 'leave', username } })
+  },
+} satisfies {
+  [K in keyof ServerMessageMap]: (msg: ServerMessageMap[K]) => void
 }
 
 async function loadRoom() {
@@ -59,24 +81,13 @@ async function loadRoom() {
   }
 
   // Connect WebSocket
-  const wsUrl = `${window.location.origin.replace(/^http/, 'ws')}/api/rooms/ws?token=${encodeURIComponent(token)}&roomId=${props.id}`
-  ws = new WebSocket(wsUrl)
+  const origin = window.location.origin.replace(/^http/, 'ws')
+  ws = new WebSocket(`${origin}/api/rooms/ws/${props.id}?token=${encodeURIComponent(token)}`)
 
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data)
-    if (msg.type === 'message') {
-      entries.value.push({ kind: 'message', data: msg as Message })
-      scrollToBottom()
-    }
-    else if (msg.type === 'join') {
-      onlineUsers.value = new Set([...onlineUsers.value, msg.username])
-      entries.value.push({ kind: 'system', data: { type: 'join', username: msg.username } })
-    }
-    else if (msg.type === 'leave') {
-      const next = new Set(onlineUsers.value)
-      next.delete(msg.username)
-      onlineUsers.value = next
-      entries.value.push({ kind: 'system', data: { type: 'leave', username: msg.username } })
+    if (msg.type in handlers) {
+      handlers[msg.type as keyof ServerMessageMap](msg)
     }
   }
 
@@ -106,60 +117,63 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="w-full max-w-2xl mx-auto flex flex-col" style="height: calc(100vh - 4rem)">
+  <div class="border-x w-full max-w-2xl mx-auto flex flex-col" style="height: calc(100vh - 4rem)">
     <!-- Header -->
     <div class="flex items-center gap-3 px-4 py-3 border-b shrink-0">
       <button class="text-muted-foreground hover:text-foreground" @click="router.push('/rooms')">
         <ArrowLeft class="size-5" />
       </button>
-      <span class="font-semibold text-lg flex-1">{{ roomName || $t('room.unnamed', { id }) }}</span>
-      <span class="text-xs text-muted-foreground">{{ $t('room.online', { count: onlineUsers.size }) }}</span>
+      <span class="font-semibold text-lg flex-1">{{ roomName }}</span>
+      <span class="text-xs text-muted-foreground">{{ t('room.online', { count: onlineUsers.size }) }}</span>
     </div>
 
     <!-- Messages -->
-    <div ref="messagesEl" class="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3">
-      <div
-        v-for="(entry, i) in entries"
-        :key="i"
-      >
-        <!-- System event -->
-        <div v-if="entry.kind === 'system'" class="text-center text-xs text-muted-foreground py-1">
-          {{ entry.data.username }} {{ entry.data.type === 'join' ? $t('room.joined') : $t('room.left') }}
-        </div>
-
-        <!-- Chat message -->
+    <ScrollArea class="flex-1">
+      <div class="px-4 py-3 space-y-3">
         <div
-          v-else
-          class="flex gap-2"
-          :class="entry.data.username === user?.username ? 'flex-row-reverse' : 'flex-row'"
+          v-for="(entry, i) in entries"
+          :key="i"
         >
-          <UserAvatar
-            :username="entry.data.username"
-            :nickname="entry.data.nickname"
-            :avatar="entry.data.avatar"
-            size="size-8"
-            class="shrink-0 mt-0.5"
-          />
+          <!-- System event -->
+          <div v-if="entry.kind === 'system'" class="text-center text-xs text-muted-foreground py-1">
+            {{ entry.data.username }} {{ entry.data.type === 'join' ? $t('room.joined') : $t('room.left') }}
+          </div>
+
+          <!-- Chat message -->
           <div
-            class="flex flex-col gap-0.5 max-w-[70%]"
-            :class="entry.data.username === user?.username ? 'items-end' : 'items-start'"
+            v-else
+            class="flex gap-2"
+            :class="entry.data.username === user?.username ? 'flex-row-reverse' : 'flex-row'"
           >
-            <span class="text-xs text-muted-foreground px-1">
-              {{ entry.data.nickname }}
-              <span class="ml-1">{{ formatTime(entry.data.createdAt) }}</span>
-            </span>
+            <UserAvatar
+              :username="entry.data.username"
+              :nickname="entry.data.nickname"
+              :avatar="entry.data.avatar"
+              size="size-8"
+              class="shrink-0 mt-0.5"
+            />
             <div
-              class="rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap break-words"
-              :class="entry.data.username === user?.username
-                ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                : 'bg-muted rounded-tl-sm'"
+              class="flex flex-col gap-0.5 max-w-[70%]"
+              :class="entry.data.username === user?.username ? 'items-end' : 'items-start'"
             >
-              {{ entry.data.content }}
+              <span class="text-xs text-muted-foreground px-1">
+                {{ entry.data.nickname }}
+                <span class="ml-1">{{ formatTime(entry.data.createdAt) }}</span>
+              </span>
+              <div
+                class="rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap wrap-break-word"
+                :class="entry.data.username === user?.username
+                  ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                  : 'bg-muted rounded-tl-sm'"
+              >
+                {{ entry.data.content }}
+              </div>
             </div>
           </div>
         </div>
+        <div ref="bottomEl" />
       </div>
-    </div>
+    </ScrollArea>
 
     <!-- Input -->
     <div class="border-t px-4 py-3 flex gap-2 items-end shrink-0">
