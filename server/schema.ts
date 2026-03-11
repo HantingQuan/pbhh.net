@@ -69,6 +69,21 @@ export const notificationPrefs = sqliteTable('notification_prefs', {
   primaryKey({ columns: [table.username, table.type] }),
 ])
 
+export const rooms = sqliteTable('rooms', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  createdBy: text('created_by').notNull().references(() => users.username),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
+export const roomMessages = sqliteTable('room_messages', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  roomId: integer('room_id').notNull().references(() => rooms.id),
+  username: text('username').notNull().references(() => users.username),
+  content: text('content').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
 export const hitokoto = sqliteTable('hitokoto', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   content: text('content').notNull(),

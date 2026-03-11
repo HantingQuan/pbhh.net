@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UserProfile } from '@server/auth/model'
-import { Inbox, LogOut, Settings, ShieldCheck, User } from 'lucide-vue-next'
+import { Inbox, LogOut, MessageSquare, Settings, ShieldCheck, User } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -39,6 +39,12 @@ function logout() {
           <span v-if="unreadCount > 0" class="ml-auto text-xs font-medium bg-blue-500 text-white rounded-full px-1.5 py-0.5 leading-none">
             {{ unreadCount }}
           </span>
+        </RouterLink>
+      </DropdownMenuItem>
+      <DropdownMenuItem as-child>
+        <RouterLink to="/rooms" class="flex items-center gap-2 cursor-pointer">
+          <MessageSquare class="size-4" />
+          {{ $t('room.title') }}
         </RouterLink>
       </DropdownMenuItem>
       <DropdownMenuItem as-child>

@@ -168,6 +168,21 @@ bind:
   waitingHint: 验证码有效期 10 分钟
   polling: 等待绑定中…
   cancel: 取消
+room:
+  title: 聊天室
+  createPlaceholder: 新建聊天室名称
+  create: 创建
+  loading: 加载中…
+  empty: 还没有聊天室，来创建第一个吧！
+  deleteConfirm: 删除聊天室「{name}」
+  deleteDescription: 此操作不可撤销，聊天室及全部消息将被永久删除。
+  joined: 加入了房间
+  left: 离开了房间
+  online: '{count} 人在线'
+  unnamed: '房间 #{id}'
+  messagePlaceholder: 输入消息…
+  rename: 重命名
+  renamePlaceholder: 房间名称
 error:
   invalidCredentials: 用户名或密码错误
   badRequest: 参数错误

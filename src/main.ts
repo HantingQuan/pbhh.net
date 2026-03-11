@@ -19,6 +19,8 @@ const router = createRouter({
     { path: '/bind', redirect: '/settings#bind' },
     { path: '/admin', component: () => import('@/views/Admin.vue'), meta: { authRequired: true, adminRequired: true } },
     { path: '/inbox', component: () => import('@/views/Inbox.vue'), meta: { authRequired: true } },
+    { path: '/rooms', component: () => import('@/views/RoomList.vue') },
+    { path: '/rooms/:id', component: () => import('@/views/RoomChat.vue'), props: route => ({ id: Number(route.params.id) }) },
     { path: '/post', component: () => import('@/views/PostPage.vue') },
     { path: '/post/:id', component: () => import('@/views/PostDetail.vue'), props: route => ({ id: Number(route.params.id) }) },
     { path: '/@:username', component: () => import('@/views/UserPage.vue') },
