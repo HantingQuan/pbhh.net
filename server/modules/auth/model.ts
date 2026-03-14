@@ -31,7 +31,7 @@ export const loginBody = t.Object({
 export type LoginBody = typeof loginBody.static
 
 export const updateProfileBody = t.Object({
-  nickname,
-  avatar,
+  nickname: t.Optional(nickname),
+  avatar: t.Optional(avatar),
 })
 export type UpdateProfileBody = typeof updateProfileBody.static

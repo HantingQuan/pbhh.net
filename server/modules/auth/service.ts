@@ -32,8 +32,8 @@ export function getByUsername(username: string): UserProfile | undefined {
 
 export async function update(username: string, data: UpdateProfileBody) {
   db.update(users).set({
-    nickname: data.nickname,
-    avatar: data.avatar,
+    ...(data.nickname !== undefined && { nickname: data.nickname }),
+    ...(data.avatar !== undefined && { avatar: data.avatar }),
   }).where(eq(users.username, username)).run()
   return getByUsername(username)
 }

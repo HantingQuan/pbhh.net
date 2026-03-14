@@ -84,6 +84,14 @@ export const roomMessages = sqliteTable('room_messages', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
 
+export const gravatarAccounts = sqliteTable('gravatar_accounts', {
+  username: text('username').notNull().primaryKey().references(() => users.username),
+  wpPassword: text('wp_password').notNull(),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  tokenExpiresAt: integer('token_expires_at', { mode: 'timestamp' }),
+})
+
 export const emails = sqliteTable('emails', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull().references(() => users.username),

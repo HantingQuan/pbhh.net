@@ -1,5 +1,6 @@
-import { Elysia } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { bus } from '../events/bus'
+import { uploadAvatar } from '../gravatar/service'
 import { getFollowerCount, getFollowingCount, isFollowing } from '../follow/service'
 import { jwtPlugin } from '../jwt'
 import { optionalAuth, requireAuth } from './guard'
@@ -45,3 +46,12 @@ export default new Elysia()
     return await AuthService.update(username, body)
       || status(404, { message: 'error.userNotFound' })
   }, { body: updateProfileBody })
+  .post('/me/avatar', async ({ username, body }) => {
+    const buffer = await body.image.arrayBuffer()
+    await uploadAvatar(username, buffer, body.image.type)
+    return AuthService.update(username, { avatar: `gravatar:${username}@pbhh.net` })
+  }, {
+    body: t.Object({
+      image: t.File({ type: ['image/jpeg', 'image/png', 'image/webp'] }),
+    }),
+  })

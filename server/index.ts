@@ -2,6 +2,7 @@ import { cors } from '@elysiajs/cors'
 import { Elysia } from 'elysia'
 import { mailServer } from './modules/mail/server'
 import './modules/admin/logger'
+import './modules/gravatar'
 
 const app = new Elysia({ prefix: '/api' })
   .use(cors())

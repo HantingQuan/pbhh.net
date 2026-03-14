@@ -10,7 +10,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { PROVIDERS, useAvatar } from '@/composables/useAvatar'
 import { useFields } from '@/composables/useFields'
 import { useValidators } from '@/composables/useValidators'
-import { api, fetchUser, user } from '@/lib/api'
+import { TOKEN, fetchUser, user } from '@/lib/api'
 
 const { t } = useI18n()
 
@@ -31,6 +31,24 @@ const avatarError = computed(() =>
 watch(avatarProvider, () => {
   avatarValue.value = ''
 })
+
+const avatarUploading = ref(false)
+const fileInput = ref<HTMLInputElement>()
+
+async function onAvatarFileChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  avatarUploading.value = true
+  const form = new FormData()
+  form.append('image', file)
+  await fetch('/api/me/avatar', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${TOKEN.value}` },
+    body: form,
+  })
+  await fetchUser()
+  avatarUploading.value = false
+}
 
 const profileSaving = ref(false)
 const profileSaved = ref(false)
@@ -54,10 +72,17 @@ async function saveProfile() {
 <template>
   <div class="space-y-4">
     <div class="flex justify-center mb-2">
-      <Avatar class="size-20 border">
-        <AvatarImage :src="avatarUrl" :alt="user?.username" />
-        <AvatarFallback>{{ user?.nickname?.slice(0, 2) }}</AvatarFallback>
-      </Avatar>
+      <button type="button" class="relative group" @click="fileInput?.click()">
+        <Avatar class="size-20 border">
+          <AvatarImage :src="avatarUrl" :alt="user?.username" />
+          <AvatarFallback>{{ user?.nickname?.slice(0, 2) }}</AvatarFallback>
+        </Avatar>
+        <div class="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Spinner v-if="avatarUploading" class="text-white" />
+          <span v-else class="text-white text-xs">{{ $t('profile.uploadAvatar') }}</span>
+        </div>
+      </button>
+      <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onAvatarFileChange">
     </div>
 
     <Input

@@ -30,6 +30,7 @@ profile:
   save: 保存
   saving: 保存中…
   saved: 已保存
+  uploadAvatar: 上传头像
 settings:
   title: 设置
   tabs:
