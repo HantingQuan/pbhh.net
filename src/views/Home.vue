@@ -9,13 +9,16 @@ const { hitokoto } = useHitokoto()
 </script>
 
 <template>
-  <div class="space-y-4 text-center my-auto px-8">
+  <div class="space-y-4 text-center my-auto p-8">
     <div v-if="user">
       {{ t('home.welcome', { nickname: user.nickname }) }}
     </div>
-    <div>
+    <div class="space-x-2">
       <RouterLink to="/post" class="link">
         {{ t('nav.post') }}
+      </RouterLink>
+      <RouterLink to="/rooms" class="link">
+        {{ t('nav.rooms') }}
       </RouterLink>
     </div>
     <Separator />
@@ -38,8 +41,8 @@ const { hitokoto } = useHitokoto()
         </a>
       </template>
     </Translation>
-    <div v-if="hitokoto" class="text-muted-foreground italic text-sm flex flex-col w-fit mx-auto">
-      <span class="pr-[2em] text-start whitespace-pre-wrap">{{ hitokoto.content }}</span>
+    <div v-if="hitokoto" class="text-muted-foreground italic text-sm flex flex-col w-fit mx-auto max-w-[80vw]">
+      <span class="pr-[2em] text-start whitespace-pre-wrap truncate">{{ hitokoto.content }}</span>
       <span class="pl-[2em] self-end">——{{ hitokoto.from }}</span>
     </div>
   </div>
