@@ -1,13 +1,17 @@
-import type { TString } from '@sinclair/typebox'
 import type { Composer } from 'vue-i18n'
-import { nickname, password, username } from 'server/modules/auth/model'
 import { useI18n } from 'vue-i18n'
+
+interface StringConstraints { minLength?: number, maxLength?: number, pattern?: string }
+
+const username: StringConstraints = { minLength: 3, maxLength: 20, pattern: '^\\w+$' }
+const nickname: StringConstraints = { minLength: 1, maxLength: 20 }
+const password: StringConstraints = { minLength: 8, maxLength: 20 }
 
 export type FieldValidator = (value: string) => string | undefined
 
 export function validateField(
   { t, te }: Pick<Composer, 't' | 'te'>,
-  schema: TString,
+  schema: StringConstraints,
   value: string,
   field?: string,
 ): string | undefined {

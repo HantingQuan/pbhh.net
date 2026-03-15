@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { UserProfile } from 'server/modules/auth/model'
-import { Inbox, LogOut, MessageSquare, Settings, ShieldCheck, User } from 'lucide-vue-next'
+import { Inbox, LogOut, MessageCircle, Settings, ShieldCheck, User } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -43,7 +43,7 @@ function logout() {
       </DropdownMenuItem>
       <DropdownMenuItem as-child>
         <RouterLink to="/rooms" class="flex items-center gap-2 cursor-pointer">
-          <MessageSquare class="size-4" />
+          <MessageCircle class="size-4" />
           {{ $t('room.title') }}
         </RouterLink>
       </DropdownMenuItem>
