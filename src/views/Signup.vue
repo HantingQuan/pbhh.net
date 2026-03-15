@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import FormPage from '@/components/FormPage.vue'
@@ -12,6 +13,7 @@ import { api, fetchUser, TOKEN } from '@/lib/api'
 const { t, te } = useI18n()
 const router = useRouter()
 const { username, nickname, password } = useValidators()
+const activeHintField = ref<string | null>(null)
 
 const { fields, filled, hasErrors } = useFields({
   username: { type: 'text', autocomplete: 'username', validate: username },
@@ -26,6 +28,13 @@ function validateConfirmPassword(value: string) {
   if (value !== fields.password.value.value)
     return t('field.confirmPassword.mismatch')
   return ''
+}
+
+function getFieldHint(key: string) {
+  if (key === 'username')
+    return t('signup.usernameHint')
+  if (key === 'nickname')
+    return t('signup.nicknameHint')
 }
 
 async function handleSubmit(): Promise<string | void> {
@@ -54,7 +63,11 @@ async function handleSubmit(): Promise<string | void> {
       v-model:value="field.value.value"
       v-model:error="field.error.value"
       :label="t(`field.${key}.label`)"
+      :hint="getFieldHint(String(key))"
+      :hint-visible="activeHintField === String(key)"
       :placeholder="t(`field.${key}.placeholder`)"
+      @focusin="activeHintField = String(key)"
+      @focusout="activeHintField = activeHintField === String(key) ? null : activeHintField"
     />
 
     <template #submit="{ loading }">

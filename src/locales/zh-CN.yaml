@@ -24,6 +24,8 @@ signup:
   title: 注册
   submit: 注册
   submitting: 注册中…
+  usernameHint: 用户名用于标识账户，注册后不可变更。
+  nicknameHint: 昵称用于页面展示，注册后可在个人资料或设置中修改。
   hasAccount: 已有账户？
   loginLink: 立即登录
 profile:
