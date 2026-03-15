@@ -44,7 +44,6 @@ settings:
     bind: 平台绑定
     notifications: 通知设置
     hitokoto: 一言来源
-  appearanceHint: 选择平台的显示外观与使用语言。
   appearance:
     themeTitle: 外观主题
     languageTitle: 界面语言

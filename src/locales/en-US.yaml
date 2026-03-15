@@ -44,7 +44,6 @@ settings:
     bind: Account Linking
     notifications: Notifications
     hitokoto: Hitokoto Source
-  appearanceHint: Choose how the site looks and which language it uses.
   appearance:
     themeTitle: Theme
     languageTitle: Language

@@ -22,9 +22,6 @@ watch(currentLocale, (value) => {
 
 <template>
   <div class="space-y-8">
-    <p class="text-sm text-muted-foreground">
-      {{ t('settings.appearanceHint') }}
-    </p>
     <section class="space-y-4">
       <div class="flex items-center gap-2 text-sm font-medium">
         <Palette class="size-4 text-muted-foreground" />
