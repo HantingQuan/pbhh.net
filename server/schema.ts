@@ -105,6 +105,26 @@ export const emails = sqliteTable('emails', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 })
 
+export const hantingWords = sqliteTable('hanting_words', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  wordNumber: integer('word_number').notNull(),
+  level: integer('level').notNull(),
+  word: text('word').notNull(),
+  competition: text('competition').notNull(),
+  flag: integer('flag').notNull().default(0),
+  pinyin: text('pinyin').notNull(),
+  definition: text('definition').notNull().default(''),
+  example: text('example').notNull().default(''),
+})
+
+export const hantingFeedback = sqliteTable('hanting_feedback', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  wordId: integer('word_id').notNull().references(() => hantingWords.id),
+  username: text('username').notNull().references(() => users.username),
+  type: text('type').notNull(), // pinyin, definition, example, duplicate, other
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
+})
+
 export const hitokoto = sqliteTable('hitokoto', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   content: text('content').notNull(),

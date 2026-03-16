@@ -275,6 +275,63 @@ room:
       voteNoed: 已投无效，等待其他人…
       voteValid: 投票通过（{yes} 票有效 / {no} 票无效）
       voteInvalid: 投票否决（{yes} 票有效 / {no} 票无效）
+hanting:
+  title: 汉听大词库
+  total: '共 {count} 条'
+  notFound: 未找到词语
+  showAnswer: 显示答案
+  hideAnswer: 隐藏答案
+  random: 随机一题
+  filter:
+    flag: 类型
+    flagAll: 全部
+    flagNormal: 成词
+    flagGuzong: 古总
+    flagEasterEgg: 彩蛋
+    level: 备考建议
+    levelAll: 全部
+    competition: 比赛
+    competitionAll: 全部比赛
+  feedback:
+    title: 题目反馈
+    pinyin: 拼音错误
+    definition: 释义错误
+    example: 例句错误
+    duplicate: 重复词条
+    other: 其他问题
+    loginRequired: 登录后才能反馈
+    submitted: 已反馈
+    count: '{count} 人反馈'
+  flag:
+    guzong: 古总
+    easterEgg: 彩蛋
+  competition:
+    B: 百知杯
+    C: 博物杯
+    D: 电阻杯/天玑
+    F: 翻翻乐/风引杯
+    G: 捷德杯/时之王者
+    H: 官方节目
+    J: 经史/适等
+    K: 扩展杯
+    L: 丽句/元晓/江左玉
+    M: 萌新杯
+    N: 萌进杯
+    P: 拼释会
+    Q: 启莱杯/千秋梦
+    S: 山水/鞑靼/明史/奊诟
+    T: 涛源杯/源点杯
+    W: 五行法会
+    X: 小雅杯/合纵连横
+    Y: 肴馔盏
+    Z: 祯休会
+    A: 随蓝/风叶杯
+    R: 物生行
+    E: 脑洞大会
+    I: 甘棠杯
+    O: 其他
+    U: 其他
+    V: 其他
 error:
   invalidCredentials: 用户名或密码错误
   badRequest: 参数错误

@@ -3,8 +3,8 @@ import { createApp } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import App from './App.vue'
 import { i18n } from './i18n'
-import { applyTheme, getInitialTheme } from './lib/appearance'
 import { fetchUnreadCount, fetchUser, user } from './lib/api'
+import { applyTheme, getInitialTheme } from './lib/appearance'
 import './style.css'
 
 if ('scrollRestoration' in history)
@@ -27,6 +27,8 @@ const router = createRouter({
     { path: '/rooms/:id', component: () => import('@/views/RoomChat.vue'), props: route => ({ id: Number(route.params.id) }) },
     { path: '/post', component: () => import('@/views/PostPage.vue') },
     { path: '/post/:id', component: () => import('@/views/PostDetail.vue'), props: route => ({ id: Number(route.params.id) }) },
+    { path: '/hanting', component: () => import('@/views/Hanting.vue') },
+    { path: '/hanting/:id', component: () => import('@/views/Hanting.vue'), props: route => ({ id: Number(route.params.id) }) },
     { path: '/@:username', component: () => import('@/views/UserPage.vue') },
   ],
 })

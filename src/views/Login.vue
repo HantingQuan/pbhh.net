@@ -30,7 +30,10 @@ async function handleSubmit(): Promise<string | void> {
 
   TOKEN.value = data.token
   await fetchUser()
-  router.push('/')
+  if (window.history.length > 1)
+    router.back()
+  else
+    router.push('/')
 }
 </script>
 

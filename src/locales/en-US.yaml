@@ -275,6 +275,33 @@ room:
       voteNoed: Marked invalid, waiting for others...
       voteValid: 'Vote passed ({yes} valid / {no} invalid)'
       voteInvalid: 'Vote rejected ({yes} valid / {no} invalid)'
+hanting:
+  title: Hanting Dictionary
+  total: '{count} entries'
+  notFound: Word not found
+  showAnswer: Show Answer
+  hideAnswer: Hide Answer
+  random: Random
+  feedback:
+    title: Feedback
+    pinyin: Wrong pinyin
+    definition: Wrong definition
+    example: Wrong example
+    duplicate: Duplicate entry
+    other: Other issue
+    loginRequired: Log in to submit feedback
+    submitted: Submitted
+    count: '{count} reported'
+  filter:
+    flag: Type
+    flagAll: All
+    flagNormal: Normal
+    flagGuzong: Guzong
+    flagEasterEgg: Easter Egg
+    level: Level
+    levelAll: All
+    competition: Competition
+    competitionAll: All
 error:
   invalidCredentials: Incorrect username or password
   badRequest: Invalid request
