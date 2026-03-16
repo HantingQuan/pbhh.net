@@ -10,9 +10,9 @@ const { hitokoto } = useHitokoto()
 
 <template>
   <div class="space-y-4 text-center my-auto p-8">
-    <div v-if="user">
+    <template v-if="user">
       {{ t('home.welcome', { nickname: user.nickname }) }}
-    </div>
+    </template>
     <Translation v-else keypath="home.notLoggedIn" tag="p">
       <template #login>
         <RouterLink to="/login" class="link">
@@ -31,6 +31,9 @@ const { hitokoto } = useHitokoto()
       </RouterLink>
       <RouterLink to="/rooms" class="link">
         {{ t('nav.rooms') }}
+      </RouterLink>
+      <RouterLink to="/hanting" class="link">
+        {{ t('nav.hanting') }}
       </RouterLink>
     </div>
     <Separator />

@@ -2,7 +2,9 @@ brand:
   name: Pinghong
 home:
   joinGroup: Click the link to join the group chat {group}
-  notLoggedIn: Welcome back to Pinghong! You are not logged in yet. Please {login} or {signup}.
+  notLoggedIn: >-
+    Welcome back to Pinghong! You are not logged in yet. Please {login} or
+    {signup}.
   loginLink: Log in
   signupLink: Sign up
   welcome: Welcome back, {nickname}.
@@ -13,6 +15,7 @@ nav:
   logout: Log out
   post: Posts
   rooms: Chat Rooms
+  hanting: Hanting
 login:
   title: Log In
   submit: Log In
@@ -23,8 +26,12 @@ signup:
   title: Sign Up
   submit: Sign Up
   submitting: Signing up...
-  usernameHint: Your username identifies the account and cannot be changed after registration.
-  nicknameHint: Your nickname is used for display and can be changed later in your profile or settings.
+  usernameHint: >-
+    Your username identifies the account and cannot be changed after
+    registration.
+  nicknameHint: >-
+    Your nickname is used for display and can be changed later in your profile
+    or settings.
   hasAccount: Already have an account?
   loginLink: Log in now
 profile:
@@ -181,7 +188,9 @@ mail:
   sending: Sending...
   sent: Email sent
   sentDone: Sent
-  sentDescription: The email was sent successfully and the recipient will be notified in their inbox.
+  sentDescription: >-
+    The email was sent successfully and the recipient will be notified in their
+    inbox.
   sendFailed: Failed to send email. Please try again later.
   reply: Reply
   delete: Delete email
@@ -190,7 +199,7 @@ mail:
   deleting: Deleting...
   from: 'From: '
   receivedAt: 'Received: '
-  noSubject: '(No subject)'
+  noSubject: (No subject)
   emptyBody: This email has no body content.
   notFound: Email not found
 userPage:
@@ -206,7 +215,9 @@ bind:
   currentQQ: 'Currently linked QQ:'
   unbind: Unlink
   unbindFailed: Failed to unlink. Please try again later.
-  intro: Click the button below to get a verification code, then send it to the QQ bot to complete account linking.
+  intro: >-
+    Click the button below to get a verification code, then send it to the QQ
+    bot to complete account linking.
   getCode: Get code
   requestFailed: Failed to get code. Please try again later.
   codeHint: 'Send the following verification code to the QQ bot:'
@@ -219,8 +230,10 @@ room:
   create: Create
   loading: Loading...
   empty: No chat rooms yet. Create the first one.
-  deleteConfirm: 'Delete room "{name}"'
-  deleteDescription: This action cannot be undone. The room and all messages will be permanently deleted.
+  deleteConfirm: Delete room "{name}"
+  deleteDescription: >-
+    This action cannot be undone. The room and all messages will be permanently
+    deleted.
   joined: joined the room
   left: left the room
   online: '{count} online'
@@ -234,12 +247,14 @@ room:
     fhl:
       btnStart: Feihualing
       btnEnd: End Game
-      startPanelHint: Enter a keyword and all online players will take turns reciting lines of poetry containing it
+      startPanelHint: >-
+        Enter a keyword and all online players will take turns reciting lines of
+        poetry containing it
       keywordPlaceholder: 'Keyword (for example: 花)'
       startConfirm: Start
       selectPlayers: Players
       timeoutLabel: Time per turn
-      banner: 'Feihualing · "{keyword}"'
+      banner: Feihualing · "{keyword}"
       currentTurn: '{player}''s turn'
       yourTurnHint: Please recite a line containing "{keyword}"
       waitingFor: Waiting for {player}...
@@ -253,9 +268,11 @@ room:
       declined: Declined
       cancelledEvent: Feihualing invitation canceled (not enough players)
       startHint: Type !飞花令 <word> to start, and !结束 to end the game
-      start: 'Feihualing started. Keyword "{keyword}", players: {players}, {player} goes first'
+      start: >-
+        Feihualing started. Keyword "{keyword}", players: {players}, {player}
+        goes first
       endCommand: Feihualing has ended
-      endWinner: 'Feihualing ended. {winner} wins!'
+      endWinner: Feihualing ended. {winner} wins!
       valid: '{username} ✓ -> next: {next}'
       invalid: '{username} ✗ ({reason}) eliminated -> next: {next}'
       invalidGameOver: '{username} ✗ ({reason}) eliminated, game over. {winner} wins!'
@@ -272,8 +289,8 @@ room:
       voteYesed: Marked valid, waiting for others...
       voteNo: Invalid
       voteNoed: Marked invalid, waiting for others...
-      voteValid: 'Vote passed ({yes} valid / {no} invalid)'
-      voteInvalid: 'Vote rejected ({yes} valid / {no} invalid)'
+      voteValid: Vote passed ({yes} valid / {no} invalid)
+      voteInvalid: Vote rejected ({yes} valid / {no} invalid)
 hanting:
   title: Hanting Dictionary
   total: '{count} entries'
