@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
+import { useMarkdown } from '@/composables/useMarkdown'
 import { api, fetchUnreadCount } from '@/lib/api'
 
 interface MailItem {
@@ -30,6 +31,7 @@ const notFound = ref(false)
 const deleting = ref(false)
 
 const safeHtml = computed(() => mail.value?.html ? DOMPurify.sanitize(mail.value.html) : '')
+const renderedText = useMarkdown(() => mail.value?.text ?? '')
 const mailDate = computed(() => mail.value ? new Date(mail.value.createdAt) : null)
 const replyUsername = computed(() => mail.value?.fromAddress.split('@')[0] ?? '')
 const replySubject = computed(() => {
@@ -147,9 +149,11 @@ watch(() => props.id, load)
 
       <Separator />
 
-      <div v-if="mail.text" class="whitespace-pre-wrap break-words text-sm leading-7 text-foreground">
-        {{ mail.text }}
-      </div>
+      <div
+        v-if="mail.text"
+        class="prose prose-sm max-w-none break-words dark:prose-invert"
+        v-html="renderedText"
+      />
       <div v-else-if="safeHtml" class="prose prose-sm max-w-none dark:prose-invert" v-html="safeHtml" />
       <p v-else class="text-sm text-muted-foreground">
         {{ t('mail.emptyBody') }}

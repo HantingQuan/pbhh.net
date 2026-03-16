@@ -69,3 +69,8 @@ export function useMarkdown(content: MaybeRefOrGetter<string>) {
 
   return result
 }
+
+export function renderMarkdownBasic(content: string): string {
+  const raw = marked.parse(content.normalize()) as string
+  return DOMPurify.sanitize(raw)
+}

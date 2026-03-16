@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { renderMarkdownBasic } from '@/composables/useMarkdown'
 import { api, user } from '@/lib/api'
 
 const props = defineProps<{ id: number }>()
@@ -20,6 +21,7 @@ interface Message {
   nickname: string
   avatar: string
   content: string
+  contentHtml: string
   createdAt: number | string | Date
 }
 
@@ -165,7 +167,13 @@ function clearVoteCountdown() {
 
 const handlers = {
   message(data) {
-    entries.value.push({ kind: 'message', data })
+    entries.value.push({
+      kind: 'message',
+      data: {
+        ...data,
+        contentHtml: renderMarkdownBasic(data.content ?? ''),
+      },
+    })
     scrollToBottom()
   },
   join({ username }) {
@@ -269,7 +277,13 @@ async function loadRoom() {
 
   const { data: msgs } = await api.rooms({ id: String(props.id) }).messages.get()
   if (msgs) {
-    entries.value = (msgs as Message[]).map(m => ({ kind: 'message', data: m }))
+    entries.value = (msgs as Omit<Message, 'contentHtml'>[]).map(m => ({
+      kind: 'message',
+      data: {
+        ...m,
+        contentHtml: renderMarkdownBasic(m.content ?? ''),
+      },
+    }))
     scrollToBottom()
   }
 
@@ -659,12 +673,15 @@ onUnmounted(() => {
                 <span class="ml-1">{{ formatTime(entry.data.createdAt) }}</span>
               </span>
               <div
-                class="rounded-2xl px-3 py-2 text-sm whitespace-pre-wrap wrap-break-word"
+                class="rounded-2xl px-3 py-2 text-sm wrap-break-word"
                 :class="entry.data.username === user?.username
                   ? 'bg-primary text-primary-foreground rounded-tr-sm'
                   : 'bg-muted rounded-tl-sm'"
               >
-                {{ entry.data.content }}
+                <div
+                  class="prose prose-sm max-w-none text-inherit [&_*]:text-inherit prose-p:my-0 prose-pre:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 dark:prose-invert"
+                  v-html="entry.data.contentHtml"
+                />
               </div>
             </div>
           </div>
