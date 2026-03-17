@@ -39,7 +39,7 @@ export function getById(id: number) {
 
 export function random(filters: Filters) {
   return db
-    .select()
+    .select({ id: hantingWords.id })
     .from(hantingWords)
     .where(buildWhere(filters))
     .orderBy(sql`RANDOM()`)
