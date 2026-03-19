@@ -13,6 +13,11 @@ export const feedbackType = t.Union([
 ])
 export type FeedbackType = typeof feedbackType.static
 
+export interface WordKey {
+  wordId: number
+  variant: number
+}
+
 export interface Filters {
   flag?: number
   level?: number
@@ -30,17 +35,39 @@ function buildWhere(filters: Filters): SQL | undefined {
   return conditions.length ? and(...conditions) : undefined
 }
 
-export function getById(id: number) {
+function wordKeyWhere(key: WordKey) {
+  return and(
+    eq(hantingWords.wordId, key.wordId),
+    eq(hantingWords.variant, key.variant),
+  )
+}
+
+function feedbackKeyWhere(key: WordKey) {
+  return and(
+    eq(hantingFeedback.wordId, key.wordId),
+    eq(hantingFeedback.variant, key.variant),
+  )
+}
+
+export function getByKey(key: WordKey) {
   return db
     .select()
     .from(hantingWords)
-    .where(eq(hantingWords.id, id))
+    .where(wordKeyWhere(key))
     .get()
+}
+
+export function getByWordId(wordId: number) {
+  return db
+    .select()
+    .from(hantingWords)
+    .where(eq(hantingWords.wordId, wordId))
+    .all()
 }
 
 export function random(filters: Filters) {
   return db
-    .select({ id: hantingWords.id })
+    .select({ wordId: hantingWords.wordId, variant: hantingWords.variant })
     .from(hantingWords)
     .where(buildWhere(filters))
     .orderBy(sql`RANDOM()`)
@@ -57,12 +84,12 @@ export function count(filters: Filters) {
   return result?.count ?? 0
 }
 
-export function toggleFeedback(wordId: number, username: string, type: FeedbackType) {
-  const word = getById(wordId)
+export function toggleFeedback(key: WordKey, username: string, type: FeedbackType) {
+  const word = getByKey(key)
   if (!word)
     return 'not_found' as const
   const condition = and(
-    eq(hantingFeedback.wordId, wordId),
+    feedbackKeyWhere(key),
     eq(hantingFeedback.username, username),
     eq(hantingFeedback.type, type),
   )
@@ -71,28 +98,28 @@ export function toggleFeedback(wordId: number, username: string, type: FeedbackT
     db.delete(hantingFeedback).where(condition).run()
     return 'removed' as const
   }
-  db.insert(hantingFeedback).values({ wordId, username, type }).run()
+  db.insert(hantingFeedback).values({ wordId: key.wordId, variant: key.variant, username, type }).run()
   return 'added' as const
 }
 
-export function getFeedback(wordId: number) {
+export function getFeedback(key: WordKey) {
   return db
     .select({
       type: hantingFeedback.type,
       count: sql<number>`count(*)`,
     })
     .from(hantingFeedback)
-    .where(eq(hantingFeedback.wordId, wordId))
+    .where(feedbackKeyWhere(key))
     .groupBy(hantingFeedback.type)
     .all()
 }
 
-export function getUserFeedback(wordId: number, username: string) {
+export function getUserFeedback(key: WordKey, username: string) {
   return db
     .select({ type: hantingFeedback.type })
     .from(hantingFeedback)
     .where(and(
-      eq(hantingFeedback.wordId, wordId),
+      feedbackKeyWhere(key),
       eq(hantingFeedback.username, username),
     ))
     .all()
@@ -124,12 +151,17 @@ export function censorText(text: string, answerChars: string[], answerPinyins: S
   }).join('').replace(/ {2,}/g, ' ').trim()
 }
 
-export function censorWord(word: typeof hantingWords.$inferSelect) {
-  const chars = [...word.word]
-  const pinyins = new Set(word.pinyin.split(/\s+/))
-  return {
-    ...word,
-    definition: word.definition ? censorText(word.definition, chars, pinyins) : word.definition,
-    example: word.example ? censorText(word.example, chars, pinyins) : word.example,
+export function buildCensorMap(word: typeof hantingWords.$inferSelect): Record<string, string> {
+  const answerChars = [...word.word]
+  const answerPinyins = new Set(word.pinyin.split(/\s+/))
+  const map: Record<string, string> = {}
+  const allText = word.definition + word.example
+  for (const char of new Set([...allText])) {
+    if (/\s/.test(char)) continue
+    const charPinyin = pinyin(char, { toneType: 'symbol' })
+    if (charPinyin === char) continue
+    if (answerChars.includes(char) || answerPinyins.has(charPinyin))
+      map[char] = charPinyin
   }
+  return map
 }

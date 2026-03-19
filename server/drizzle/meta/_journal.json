@@ -120,6 +120,20 @@
       "when": 1773659779930,
       "tag": "0016_fearless_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1773929935242,
+      "tag": "0017_long_zodiak",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1773929940117,
+      "tag": "0018_slow_guardian",
+      "breakpoints": true
     }
   ]
 }

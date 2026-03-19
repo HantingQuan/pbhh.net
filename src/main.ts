@@ -28,7 +28,12 @@ const router = createRouter({
     { path: '/post', component: () => import('@/views/PostPage.vue') },
     { path: '/post/:id', component: () => import('@/views/PostDetail.vue'), props: route => ({ id: Number(route.params.id) }) },
     { path: '/hanting', component: () => import('@/views/Hanting.vue') },
-    { path: '/hanting/:id', component: () => import('@/views/Hanting.vue'), props: route => ({ id: Number(route.params.id) }) },
+    { path: '/hanting/:key', component: () => import('@/views/Hanting.vue'), props: route => {
+      const parts = String(route.params.key).split('.')
+      const key = String(route.params.key)
+      const match = key.match(/^(\d+)([a-z])?$/)
+      return { wordId: Number(match?.[1]), variant: match?.[2] ? match[2].charCodeAt(0) - 97 : 0 }
+    } },
     { path: '/@:username', component: () => import('@/views/UserPage.vue') },
   ],
 })

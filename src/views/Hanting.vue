@@ -14,8 +14,8 @@ interface FeedbackCount {
 }
 
 interface Word {
-  id: number
-  wordNumber: number
+  wordId: number
+  variant: number
   level: number
   word: string
   competition: string
@@ -23,15 +23,23 @@ interface Word {
   pinyin: string
   definition: string
   example: string
+  censorMap: Record<string, string>
   feedback: FeedbackCount[]
   userFeedback: string[]
 }
 
-const props = defineProps<{ id?: number }>()
+const props = defineProps<{ wordId?: number, variant?: number }>()
 const router = useRouter()
 const { t, te } = useI18n()
 
-const word = ref<Word | null>(null)
+const words = ref<Word[]>([])
+const word = computed(() => {
+  if (!words.value.length)
+    return null
+  if (props.variant != null)
+    return words.value.find(w => w.variant === props.variant) ?? words.value[0]!
+  return words.value[0]!
+})
 const loading = ref(true)
 const totalCount = ref(0)
 const showAnswer = ref(false)
@@ -64,7 +72,7 @@ const rubyPairs = computed(() => {
   const pinyins = word.value.pinyin.split(/\s+/)
 
   if (chars.length === pinyins.length) {
-    return chars.map((char, i) => ({ char, pinyin: pinyins[i] }))
+    return chars.map((char, i) => ({ char, pinyin: pinyins[i]! }))
   }
 
   // Distribute extra chars to longer (connected) pinyin tokens proportionally
@@ -74,7 +82,7 @@ const rubyPairs = computed(() => {
     const lengths = pinyins.map(p => p.replace(/[^a-zA-ZüÜāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, '').length)
     const avgLen = lengths.reduce((a, b) => a + b, 0) / pinyins.length
     // Assign char count per token: 1 for short tokens, proportionally more for longer ones
-    const charCounts = pinyins.map((_, i) => Math.max(1, Math.round(lengths[i] / avgLen)))
+    const charCounts = pinyins.map((_, i) => Math.max(1, Math.round(lengths[i]! / avgLen)))
     // Adjust to match total char count
     const total = charCounts.reduce((a, b) => a + b, 0)
     if (total !== chars.length) {
@@ -82,17 +90,17 @@ const rubyPairs = computed(() => {
       const diff = chars.length - total
       const sorted = lengths.map((l, i) => ({ l, i })).sort((a, b) => b.l - a.l)
       for (let d = 0; d < Math.abs(diff); d++)
-        charCounts[sorted[d % sorted.length]!.i] += diff > 0 ? 1 : -1
+        charCounts[sorted[d % sorted.length]!.i]! += diff > 0 ? 1 : -1
     }
     const pairs: { char: string, pinyin: string }[] = []
     let ci = 0
     for (let i = 0; i < pinyins.length; i++) {
-      const count = Math.min(charCounts[i], chars.length - ci)
-      pairs.push({ char: chars.slice(ci, ci + count).join(''), pinyin: pinyins[i] })
+      const count = Math.min(charCounts[i]!, chars.length - ci)
+      pairs.push({ char: chars.slice(ci, ci + count).join(''), pinyin: pinyins[i]! })
       ci += count
     }
     if (ci < chars.length && pairs.length > 0)
-      pairs[pairs.length - 1].char += chars.slice(ci).join('')
+      pairs[pairs.length - 1]!.char += chars.slice(ci).join('')
     return pairs
   }
 
@@ -119,6 +127,16 @@ function hasFeedback(type: string) {
   return word.value?.userFeedback.includes(type) ?? false
 }
 
+function censorText(text: string) {
+  const map = word.value?.censorMap
+  if (!map || !text) return text
+  return [...text].map(ch => ch in map ? ` ${map[ch]} ` : ch).join('').replace(/ {2,}/g, ' ').trim()
+}
+
+function wordUrl(wordId: number, variant: number) {
+  return `/hanting/${wordId}${words.value.length > 1 ? String.fromCharCode(97 + variant) : ''}`
+}
+
 async function loadRandom() {
   loading.value = true
   showAnswer.value = false
@@ -126,34 +144,37 @@ async function loadRandom() {
 
   if (totalCount.value === 0) {
     loading.value = false
-    word.value = null
+    words.value = []
     return
   }
 
   const { data } = await api.hanting.random.get({ query: filterQuery.value })
   if (data) {
-    word.value = data
-    router.push(`/hanting/${data.id}`)
+    const { data: all } = await api.hanting({ wordId: String(data.wordId) }).get()
+    words.value = all && all.length ? all : [data]
+    router.push(wordUrl(data.wordId, data.variant))
     loading.value = false
   }
   else {
     loading.value = false
-    word.value = null
+    words.value = []
   }
 }
 
-async function loadById(id: number) {
+async function loadByWordId(wordId: number) {
   loading.value = true
   showAnswer.value = false
   showFeedback.value = false
-  const { data } = await api.hanting({ id }).get()
-  if (data) {
-    word.value = data
+  const { data } = await api.hanting({ wordId: String(wordId) }).get()
+  if (data && data.length) {
+    words.value = data
+    if (data.length > 1)
+      router.replace(wordUrl(wordId, props.variant ?? 0))
     loading.value = false
   }
   else {
     loading.value = false
-    word.value = null
+    words.value = []
   }
 }
 
@@ -179,7 +200,7 @@ async function refreshRandomByFilters() {
   if (totalCount.value === 0) {
     showAnswer.value = false
     showFeedback.value = false
-    word.value = null
+    words.value = []
     loading.value = false
     return
   }
@@ -188,30 +209,31 @@ async function refreshRandomByFilters() {
 }
 
 async function submitFeedback(type: FeedbackType) {
-  if (!word.value)
+  const w = word.value
+  if (!w)
     return
-  const { data } = await api.hanting({ id: word.value.id }).feedback.post({ type })
+  const { data } = await api.hanting({ wordId: String(w.wordId) })({ variant: String(w.variant) }).feedback.post({ type })
   if (!data)
     return
   if (data.action === 'added') {
-    word.value.userFeedback.push(type)
-    const existing = word.value.feedback.find(f => f.type === type)
+    w.userFeedback.push(type)
+    const existing = w.feedback.find(f => f.type === type)
     if (existing)
       existing.count++
     else
-      word.value.feedback.push({ type, count: 1 })
+      w.feedback.push({ type, count: 1 })
   }
   else if (data.action === 'removed') {
-    word.value.userFeedback = word.value.userFeedback.filter(t => t !== type)
-    const existing = word.value.feedback.find(f => f.type === type)
+    w.userFeedback = w.userFeedback.filter(t => t !== type)
+    const existing = w.feedback.find(f => f.type === type)
     if (existing)
       existing.count = Math.max(0, existing.count - 1)
   }
 }
 
-watch(() => props.id, (id, oldId) => {
-  if (id && id !== oldId)
-    loadById(id)
+watch(() => props.wordId, (wid, oldWid) => {
+  if (wid != null && wid !== oldWid)
+    loadByWordId(wid)
 })
 
 watch(filterQuery, () => {
@@ -220,9 +242,9 @@ watch(filterQuery, () => {
 
 onMounted(async () => {
   await loadCompetitions()
-  if (props.id) {
+  if (props.wordId != null) {
     await loadCount()
-    await loadById(props.id)
+    await loadByWordId(props.wordId)
   }
   else {
     await refreshRandomByFilters()
@@ -309,7 +331,17 @@ onMounted(async () => {
     <div v-if="word" class="rounded-xl border bg-card p-5 shadow-sm space-y-4">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="text-xs text-muted-foreground font-mono">#{{ word.wordNumber }}</span>
+          <span class="text-xs text-muted-foreground font-mono">#{{ word.wordId }}</span>
+          <template v-if="words.length > 1">
+            <button
+              v-for="w in words" :key="w.variant"
+              class="text-xs px-1.5 py-0.5 rounded transition-colors"
+              :class="w.variant === word.variant ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'"
+              @click="router.push(wordUrl(word.wordId, w.variant))"
+            >
+              {{ String.fromCharCode(97 + w.variant) }}
+            </button>
+          </template>
           <span class="text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
             {{ competitionLabel }}
           </span>
@@ -334,10 +366,10 @@ onMounted(async () => {
           </ruby>
         </p>
         <p v-if="word.definition" class="text-sm text-muted-foreground">
-          {{ word.definition }}
+          {{ showAnswer ? word.definition : censorText(word.definition) }}
         </p>
         <p v-if="word.example" class="text-sm text-muted-foreground text-start whitespace-pre-wrap">
-          {{ word.example }}
+          {{ showAnswer ? word.example : censorText(word.example) }}
         </p>
       </div>
 

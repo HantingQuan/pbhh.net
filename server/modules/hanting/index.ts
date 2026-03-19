@@ -21,14 +21,17 @@ function toFilters(query: { flag?: number, level?: number, competition?: string 
 export default new Elysia()
   .use(optionalAuth)
   .get('/hanting/random', ({ query, status, username }) => {
-    const word = HantingService.random(toFilters(query))
-    return word
-      ? {
-          ...HantingService.censorWord(HantingService.getById(word.id)!),
-          feedback: HantingService.getFeedback(word.id),
-          userFeedback: username ? HantingService.getUserFeedback(word.id, username) : [],
-        }
-      : status(404, { message: 'not found' })
+    const pick = HantingService.random(toFilters(query))
+    if (!pick)
+      return status(404, { message: 'not found' })
+    const key = { wordId: pick.wordId, variant: pick.variant }
+    const word = HantingService.getByKey(key)!
+    return {
+      ...word,
+      censorMap: HantingService.buildCensorMap(word),
+      feedback: HantingService.getFeedback(key),
+      userFeedback: username ? HantingService.getUserFeedback(key, username) : [],
+    }
   }, { query: filterQuery })
   .get('/hanting/count', ({ query }) => {
     return { count: HantingService.count(toFilters(query)) }
@@ -36,22 +39,29 @@ export default new Elysia()
   .get('/hanting/competitions', () => {
     return HantingService.competitions()
   })
-  .get('/hanting/:id', ({ params, status, username }) => {
-    const word = HantingService.getById(Number(params.id))
-    return word
-      ? {
-          ...HantingService.censorWord(word),
-          feedback: HantingService.getFeedback(word.id),
-          userFeedback: username ? HantingService.getUserFeedback(word.id, username) : [],
-        }
-      : status(404, { message: 'not found' })
+  .get('/hanting/:wordId', ({ params, status, username }) => {
+    const wordId = Number(params.wordId)
+    const words = HantingService.getByWordId(wordId)
+    if (!words.length)
+      return status(404, { message: 'not found' })
+    return words.map((word) => {
+      const key = { wordId: word.wordId, variant: word.variant }
+      return {
+        ...word,
+        censorMap: HantingService.buildCensorMap(word),
+        feedback: HantingService.getFeedback(key),
+        userFeedback: username ? HantingService.getUserFeedback(key, username) : [],
+      }
+    })
   })
   .use(requireAuth)
-  .post('/hanting/:id/feedback', ({ params, body, status, username }) => {
-    const result = HantingService.toggleFeedback(Number(params.id), username, body.type)
+  .post('/hanting/:wordId/:variant/feedback', ({ params, body, status, username }) => {
+    const key = { wordId: Number(params.wordId), variant: Number(params.variant) }
+    const result = HantingService.toggleFeedback(key, username, body.type)
     if (result === 'not_found')
       return status(404, { message: 'not found' })
     return { action: result }
   }, {
+    params: t.Object({ wordId: t.String(), variant: t.String() }),
     body: t.Object({ type: feedbackType }),
   })

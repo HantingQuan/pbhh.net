@@ -106,8 +106,8 @@ export const emails = sqliteTable('emails', {
 })
 
 export const hantingWords = sqliteTable('hanting_words', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  wordNumber: integer('word_number').notNull(),
+  wordId: integer('word_id').notNull(),
+  variant: integer('variant').notNull().default(0),
   level: integer('level').notNull(),
   word: text('word').notNull(),
   competition: text('competition').notNull(),
@@ -115,11 +115,14 @@ export const hantingWords = sqliteTable('hanting_words', {
   pinyin: text('pinyin').notNull(),
   definition: text('definition').notNull().default(''),
   example: text('example').notNull().default(''),
-})
+}, table => [
+  primaryKey({ columns: [table.wordId, table.variant] }),
+])
 
 export const hantingFeedback = sqliteTable('hanting_feedback', {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  wordId: integer('word_id').notNull().references(() => hantingWords.id),
+  wordId: integer('word_id').notNull(),
+  variant: integer('variant').notNull().default(0),
   username: text('username').notNull().references(() => users.username),
   type: text('type').notNull(), // pinyin, definition, example, duplicate, other
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
