@@ -21,17 +21,14 @@ function toFilters(query: { flag?: number, level?: number, competition?: string 
 export default new Elysia()
   .use(optionalAuth)
   .get('/hanting/random', ({ query, status, username }) => {
-    const result = HantingService.random(toFilters(query))
-    if (!result)
-      return status(404, { message: 'not found' })
-    const word = HantingService.getById(result.id)
-    if (!word)
-      return status(404, { message: 'not found' })
-    return {
-      ...HantingService.censorWord(word),
-      feedback: HantingService.getFeedback(word.id),
-      userFeedback: username ? HantingService.getUserFeedback(word.id, username) : [],
-    }
+    const word = HantingService.random(toFilters(query))
+    return word
+      ? {
+          ...HantingService.censorWord(HantingService.getById(word.id)!),
+          feedback: HantingService.getFeedback(word.id),
+          userFeedback: username ? HantingService.getUserFeedback(word.id, username) : [],
+        }
+      : status(404, { message: 'not found' })
   }, { query: filterQuery })
   .get('/hanting/count', ({ query }) => {
     return { count: HantingService.count(toFilters(query)) }
@@ -41,11 +38,13 @@ export default new Elysia()
   })
   .get('/hanting/:id', ({ params, status, username }) => {
     const word = HantingService.getById(Number(params.id))
-    return word && {
-      ...HantingService.censorWord(word),
-      feedback: HantingService.getFeedback(word.id),
-      userFeedback: username ? HantingService.getUserFeedback(word.id, username) : [],
-    } || status(404, { message: 'not found' })
+    return word
+      ? {
+          ...HantingService.censorWord(word),
+          feedback: HantingService.getFeedback(word.id),
+          userFeedback: username ? HantingService.getUserFeedback(word.id, username) : [],
+        }
+      : status(404, { message: 'not found' })
   })
   .use(requireAuth)
   .post('/hanting/:id/feedback', ({ params, body, status, username }) => {

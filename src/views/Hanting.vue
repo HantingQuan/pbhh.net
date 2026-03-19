@@ -58,12 +58,45 @@ const stars = computed(() => {
 const rubyPairs = computed(() => {
   if (!word.value)
     return []
-  const chars = [...word.value.word]
+  // Use only the first variant for display (before /)
+  const displayWord = word.value.word.split('/')[0]!
+  const chars = [...displayWord]
   const pinyins = word.value.pinyin.split(/\s+/)
-  return chars.map((char, i) => ({
-    char,
-    pinyin: pinyins[i] || '',
-  }))
+
+  if (chars.length === pinyins.length) {
+    return chars.map((char, i) => ({ char, pinyin: pinyins[i] }))
+  }
+
+  // Distribute extra chars to longer (connected) pinyin tokens proportionally
+  const extra = chars.length - pinyins.length
+  if (extra > 0 && pinyins.length > 0) {
+    // Estimate syllable count per token by length (longer tokens = more syllables)
+    const lengths = pinyins.map(p => p.replace(/[^a-zA-ZüÜāáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, '').length)
+    const avgLen = lengths.reduce((a, b) => a + b, 0) / pinyins.length
+    // Assign char count per token: 1 for short tokens, proportionally more for longer ones
+    const charCounts = pinyins.map((_, i) => Math.max(1, Math.round(lengths[i] / avgLen)))
+    // Adjust to match total char count
+    const total = charCounts.reduce((a, b) => a + b, 0)
+    if (total !== chars.length) {
+      // Distribute difference to the longest tokens first
+      const diff = chars.length - total
+      const sorted = lengths.map((l, i) => ({ l, i })).sort((a, b) => b.l - a.l)
+      for (let d = 0; d < Math.abs(diff); d++)
+        charCounts[sorted[d % sorted.length]!.i] += diff > 0 ? 1 : -1
+    }
+    const pairs: { char: string, pinyin: string }[] = []
+    let ci = 0
+    for (let i = 0; i < pinyins.length; i++) {
+      const count = Math.min(charCounts[i], chars.length - ci)
+      pairs.push({ char: chars.slice(ci, ci + count).join(''), pinyin: pinyins[i] })
+      ci += count
+    }
+    if (ci < chars.length && pairs.length > 0)
+      pairs[pairs.length - 1].char += chars.slice(ci).join('')
+    return pairs
+  }
+
+  return [{ char: displayWord, pinyin: word.value.pinyin }]
 })
 
 const competitionLabel = computed(() => {

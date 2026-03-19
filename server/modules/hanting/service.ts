@@ -126,9 +126,7 @@ export function censorText(text: string, answerChars: string[], answerPinyins: S
 
 export function censorWord(word: typeof hantingWords.$inferSelect) {
   const chars = [...word.word]
-  const pinyins = new Set(
-    chars.map(c => pinyin(c, { toneType: 'symbol' })),
-  )
+  const pinyins = new Set(word.pinyin.split(/\s+/))
   return {
     ...word,
     definition: word.definition ? censorText(word.definition, chars, pinyins) : word.definition,
