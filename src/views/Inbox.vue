@@ -225,26 +225,27 @@ async function navigate(item: DisplayItem) {
       <h1 class="text-lg font-semibold">
         {{ t('inbox.title') }}
       </h1>
-      <Button
-        v-if="displayItems.length"
-        variant="outline"
-        size="sm"
-        class="ml-auto"
-        :disabled="markingAllRead || !hasUnreadItems"
-        @click="markAllRead"
-      >
-        <Spinner v-if="markingAllRead" data-icon="inline-start" />
-        {{ hasUnreadItems ? t('settings.notifications.markAllRead') : t('settings.notifications.markAllReadDone') }}
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        class="gap-1.5"
-        @click="router.push('/mail/compose')"
-      >
-        <MailPlus class="size-4" />
-        {{ t('mail.compose') }}
-      </Button>
+      <div class="ml-auto flex items-center gap-2">
+        <Button
+          v-if="displayItems.length"
+          variant="outline"
+          size="sm"
+          :disabled="markingAllRead || !hasUnreadItems"
+          @click="markAllRead"
+        >
+          <Spinner v-if="markingAllRead" data-icon="inline-start" />
+          {{ hasUnreadItems ? t('settings.notifications.markAllRead') : t('settings.notifications.markAllReadDone') }}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="gap-1.5"
+          @click="router.push('/mail/compose')"
+        >
+          <MailPlus class="size-4" />
+          {{ t('mail.compose') }}
+        </Button>
+      </div>
     </div>
 
     <div v-if="loading" class="flex justify-center py-8">
