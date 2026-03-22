@@ -15,12 +15,12 @@ const currentPath = computed(() => {
 </script>
 
 <template>
-  <section class="not-found-shell relative flex min-h-[calc(100vh-4rem)] w-full items-center justify-center overflow-hidden px-6 py-12">
+  <section class="not-found-shell relative flex w-full items-center justify-center overflow-hidden px-4 py-4 sm:px-6 sm:py-8">
     <div class="not-found-wash not-found-wash-left" aria-hidden="true" />
     <div class="not-found-wash not-found-wash-right" aria-hidden="true" />
 
-    <div class="relative z-10 flex w-full max-w-5xl flex-col items-center text-center">
-      <div class="hong-scene mb-10" aria-hidden="true">
+    <div class="not-found-stage relative z-10 flex w-full max-w-5xl flex-col items-center text-center">
+      <div class="hong-scene" aria-hidden="true">
         <p class="hong-kicker">
           薨〇薨
         </p>
@@ -37,11 +37,11 @@ const currentPath = computed(() => {
       </div>
 
       <div class="not-found-copy flex flex-col items-center">
-        <h1 class="mb-3 text-2xl font-semibold tracking-[0.15em] text-foreground sm:text-3xl">
+        <h1 class="not-found-title text-2xl font-semibold tracking-[0.15em] text-foreground sm:text-3xl">
           您好，您误入藕花深处了
         </h1>
 
-        <p class="mb-8 text-sm text-muted-foreground sm:text-base">
+        <p class="not-found-path text-sm text-muted-foreground sm:text-base">
           这里是
           <code class="rounded-md border bg-background/75 px-2 py-1 font-mono text-foreground">{{ currentPath }}</code>
         </p>
@@ -58,9 +58,14 @@ const currentPath = computed(() => {
 
 <style scoped>
 .not-found-shell {
+  min-height: calc(100dvh - 4rem);
   background:
     radial-gradient(circle at top, color-mix(in oklch, var(--foreground) 7%, transparent), transparent 38%),
     linear-gradient(180deg, color-mix(in oklch, var(--muted) 70%, white), var(--background) 58%);
+}
+
+.not-found-stage {
+  gap: clamp(1.25rem, 4vh, 2.5rem);
 }
 
 .not-found-wash {
@@ -87,12 +92,13 @@ const currentPath = computed(() => {
 .hong-scene {
   position: relative;
   width: min(86vw, 62rem);
-  height: min(66vw, 34rem);
+  height: min(46dvh, 34rem);
+  min-height: 14rem;
 }
 
 .hong-kicker {
   position: absolute;
-  left: 50%;
+  left: calc(50% - 0.6rem);
   top: 5%;
   z-index: 2;
   margin: 0;
@@ -166,8 +172,19 @@ const currentPath = computed(() => {
 }
 
 .not-found-copy {
+  gap: 0.75rem;
+  max-width: min(92vw, 38rem);
   opacity: 0;
   animation: copy-enter 540ms ease-out 2380ms both;
+}
+
+.not-found-title,
+.not-found-path {
+  margin: 0;
+}
+
+.not-found-path {
+  margin-bottom: 1.25rem;
 }
 
 @keyframes hong-enter {
@@ -230,7 +247,8 @@ const currentPath = computed(() => {
 
 @media (max-width: 640px) {
   .hong-scene {
-    height: min(72vw, 24rem);
+    height: min(34dvh, 24rem);
+    min-height: 12rem;
   }
 
   .hong-kicker {
@@ -248,6 +266,51 @@ const currentPath = computed(() => {
 
   .hong-404 {
     width: clamp(14rem, 76vw, 26rem);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 760px) {
+  .not-found-shell {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .not-found-stage {
+    gap: 0.875rem;
+  }
+
+  .hong-scene {
+    width: min(76vw, 48rem);
+    height: min(30dvh, 13rem);
+    min-height: 10rem;
+  }
+
+  .hong-kicker {
+    top: 2%;
+    font-size: 0.8rem;
+  }
+
+  .hong-character {
+    width: clamp(8rem, 15vw, 13rem);
+    height: clamp(8rem, 15vw, 13rem);
+  }
+
+  .hong-404 {
+    width: clamp(16rem, 42vw, 28rem);
+  }
+
+  .not-found-copy {
+    gap: 0.5rem;
+  }
+
+  .not-found-title {
+    font-size: clamp(1.25rem, 2.2vw, 1.75rem);
+    letter-spacing: 0.08em;
+  }
+
+  .not-found-path {
+    margin-bottom: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 </style>

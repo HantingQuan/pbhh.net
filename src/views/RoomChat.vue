@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { api, user } from '@/lib/api'
 import { makeReplyPreview, renderRoomMessageHtml } from '@/lib/roomMessage'
+import NotFound from '@/views/NotFound.vue'
 
 const props = defineProps<{ id: number }>()
 const router = useRouter()
@@ -102,6 +103,7 @@ const draft = ref('')
 const poemDraft = ref('')
 const rooms = ref<RoomSummary[]>([])
 const roomName = ref(t('room.unnamed', { id: props.id }))
+const roomNotFound = ref(false)
 const onlineUsers = ref<Map<string, OnlineUser>>(new Map())
 const observerCount = ref(0)
 const gameState = ref<GameState | null>(null)
@@ -605,14 +607,18 @@ const handlers = {
 }
 
 async function loadRoom() {
+  roomNotFound.value = false
   const token = localStorage.getItem('token') ?? ''
 
   const { data: roomList } = await api.rooms.get()
   if (roomList) {
     rooms.value = roomList
     const room = roomList.find(r => r.id === props.id)
-    if (room)
-      roomName.value = room.name
+    if (!room) {
+      roomNotFound.value = true
+      return
+    }
+    roomName.value = room.name
   }
 
   const { data: msgs } = await api.rooms({ id: String(props.id) }).messages.get()
@@ -799,7 +805,8 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="relative border-x w-full max-w-2xl mx-auto flex flex-col" style="height: calc(100vh - 4rem)">
+  <NotFound v-if="roomNotFound" />
+  <div v-else class="relative border-x w-full max-w-2xl mx-auto flex flex-col" style="height: calc(100vh - 4rem)">
     <!-- Header -->
     <div class="flex items-center gap-3 px-4 py-3 border-b shrink-0">
       <button class="text-muted-foreground hover:text-foreground" @click="router.push('/rooms')">
