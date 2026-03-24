@@ -90,6 +90,8 @@ const currentPath = computed(() => {
 }
 
 .hong-scene {
+  --hong-center-x: 50%;
+  --hong-kicker-offset-x: -1.5rem;
   position: relative;
   width: min(86vw, 62rem);
   height: min(46dvh, 34rem);
@@ -98,7 +100,7 @@ const currentPath = computed(() => {
 
 .hong-kicker {
   position: absolute;
-  left: calc(50% - 0.6rem);
+  left: calc(var(--hong-center-x) + var(--hong-kicker-offset-x));
   top: 5%;
   z-index: 2;
   margin: 0;
@@ -113,7 +115,7 @@ const currentPath = computed(() => {
 .hong-404,
 .hong-character {
   position: absolute;
-  left: 50%;
+  left: var(--hong-center-x);
   top: 50%;
   line-height: 1;
   user-select: none;
