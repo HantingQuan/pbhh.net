@@ -11,6 +11,11 @@ export function renderRoomMessageHtml(content: string, rooms: RoomMentionOption[
     .replace(/(^|[\s(])@([\w-]+)@/g, (_, prefix: string, username: string) => {
       return `${prefix}[@${username}](/@${username})`
     })
+    .replace(/(^|[\s(])#(\d+)#/g, (_, prefix: string, roomId: string) => {
+      const id = Number(roomId)
+      const label = roomMap.get(id)?.trim() ? `#${roomMap.get(id)}` : `#${roomId}`
+      return `${prefix}[${label}](/rooms/${roomId})`
+    })
     .replace(/(^|[\s(])_(\d+)_/g, (_, prefix: string, roomId: string) => {
       const id = Number(roomId)
       const label = roomMap.get(id)?.trim() ? `#${roomMap.get(id)}` : `#${roomId}`

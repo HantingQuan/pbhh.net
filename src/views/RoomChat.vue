@@ -392,7 +392,7 @@ function getComposerTrigger(): ComposerTrigger | null {
     }
   }
 
-  const roomMatch = /(?:^|[\s(])_(\d*)$/.exec(beforeCursor)
+  const roomMatch = /(?:^|[\s(])#(\d*)$/.exec(beforeCursor)
   if (roomMatch) {
     const query = roomMatch[1] ?? ''
     return {
@@ -432,8 +432,8 @@ const composerCompletions = computed<ComposerCompletion[]>(() => {
     .map(room => ({
       key: `room:${room.id}`,
       label: room.name || `房间 ${room.id}`,
-      detail: `_${room.id}_`,
-      insertText: `_${room.id}_`,
+      detail: `#${room.id}#`,
+      insertText: `#${room.id}# `,
     }))
 })
 
